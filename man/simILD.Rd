@@ -19,65 +19,65 @@ simILD(
 )
 }
 \arguments{
-\item{n}{Nombre d'individus dans la base de données.}
+\item{n}{Number of individuals in the dataset.}
 
-\item{censure}{Paramètre \emph{rate} de la loi exponentielle utilisé pour générer
-la censure aléatoire à droite.}
+\item{censure}{\emph{Rate} parameter of the exponential distribution used to generate
+random right censoring.}
 
-\item{lambda}{Vecteur des paramètres d'échelle des fonctions d'intensité de base
-pour les lois considérées (Weibull, Gompertz et log-logistique généralisée).
-Les colonnes représentent respectivement les paramètres de génération des transitions
-$1 -> 2$, $1 -> 3$ et $2 -> 3$. Pour l'exponentielle constante par morceaux,
-\code{lambda} est une matrice dont les lignes représentent les paramètres associés
-à chaque intervalle. Ce paramètre n'est pas utilisé pour l'approximation linéaire
-par morceaux.}
+\item{lambda}{Vector of scale parameters for the baseline intensity functions
+corresponding to the considered distributions (Weibull, Gompertz, and generalized
+log-logistic). The columns respectively represent the generation parameters for the
+transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$. For the piecewise constant exponential
+distribution, \code{lambda} is a matrix whose rows represent the parameters associated
+with each interval. This parameter is not used for the piecewise linear approximation.}
 
-\item{alpha}{Vecteur des paramètres de forme des fonctions d'intensité de base
-pour les lois considérées (Weibull, Gompertz et log-logistique généralisée).
-Les colonnes représentent respectivement les paramètres de génération des transitions
-$1-> 2$, $1-> 3$ et $2-> 3$. Ce paramètre n'est pas utilisé pour
-l'exponentielle constante par morceaux ni pour l'approximation linéaire par morceaux.}
+\item{alpha}{Vector of shape parameters for the baseline intensity functions
+corresponding to the considered distributions (Weibull, Gompertz, and generalized
+log-logistic). The columns respectively represent the generation parameters for the
+transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$. This parameter is not used for the
+piecewise constant exponential distribution nor for the piecewise linear approximation.}
 
-\item{rho}{Vecteur des paramètres de position de la loi log-logistique généralisée.
-Les colonnes représentent respectivement les paramètres de génération des transitions
-$1-> 2$, $1-> 3$ et $2-> 3$.}
+\item{rho}{Vector of location parameters for the generalized log-logistic distribution.
+The columns respectively represent the generation parameters for the transitions
+$1 -> 2$, $1 -> 3$, and $2 -> 3$.}
 
-\item{beta}{Matrice des coefficients des covariables de dimension
-(\emph{nombre de covariables} $*$ 3).}
+\item{beta}{Matrix of covariate coefficients of dimension
+(\emph{number of covariates} $*$ 3).}
 
-\item{rates}{Matrice des paramètres d'ordonnée à l'origine et de pente pour
-l'approximation linéaire par morceaux. Les colonnes représentent respectivement
-les paramètres de génération des transitions $1-> 2$, $1-> 3$ et $2-> 3$,
-tandis que les lignes correspondent aux paramètres associés à chaque intervalle.}
+\item{rates}{Matrix of intercept and slope parameters for the piecewise linear
+approximation. The columns respectively represent the generation parameters for the
+transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$, while the rows correspond to the
+parameters associated with each interval.}
 
-\item{covariable}{Nombre de covariables à simuler. Les covariables sont générées
-selon une loi normale centrée réduite. La valeur par défaut est 0.}
+\item{covariable}{Number of covariates to simulate. Covariates are generated from
+a standard normal distribution. The default value is 0.}
 
-\item{distribution}{Nom du modèle utilisé pour la génération des données.
-Les valeurs possibles sont : Weibull (\code{"weibull"}), Gompertz
-(\code{"gompertz"}), log-logistique généralisée (\code{"gll"}),
-exponentielle constante par morceaux (\code{"pwexp"}) et approximation
-linéaire par morceaux (\code{"pla"}). Le modèle par défaut est Weibull.}
+\item{distribution}{Name of the model used for data generation.
+Possible values are: Weibull (\code{"weibull"}), Gompertz
+(\code{"gompertz"}), generalized log-logistic (\code{"gll"}),
+piecewise constant exponential (\code{"pwexp"}), and piecewise
+linear approximation (\code{"pla"}). The default model is Weibull.}
 
-\item{lat_long}{Indique si la base de données est retournée sous format long
-(\code{lat_long = TRUE}) ou sous format court (\code{lat_long = FALSE}).
-La valeur par défaut est \code{TRUE}.}
+\item{lat_long}{Indicates whether the dataset is returned in long format
+(\code{lat_long = TRUE}) or short format (\code{lat_long = FALSE}).
+The default value is \code{TRUE}.}
 
-\item{breakpoints}{Vecteur des points de coupure utilisés pour l'exponentielle
-constante par morceaux et l'approximation linéaire par morceaux.}
+\item{breakpoints}{Vector of cut points used for the piecewise constant
+exponential distribution and the piecewise linear approximation.}
 }
 \value{
-La fonction retourne une base de données contenant les variables :
-\code{id} (identifiant de l'individu), \code{start} (temps d'entrée dans l'état $k$),
-\code{stop} (temps de sortie de l'état $k$), \code{status} (indique si la transition
-$k -> l$ est observée), \code{from} (état de départ), \code{to} (état d'arrivée),
-ainsi que les covariables générées, lorsqu'elles sont incluses dans le modèle.
+The function returns a dataset containing the variables:
+\code{id} (individual identifier), \code{start} (entry time into state $k$),
+\code{stop} (exit time from state $k$), \code{status} (indicates whether the
+transition $k -> l$ is observed), \code{from} (starting state), \code{to}
+(destination state), as well as the generated covariates when they are included
+in the model.
 }
 \description{
-G\\u00e9nère une base de données sous format long (un individu est représenté par au moins deux lignes)
-ou sous format court (un individu est représenté par au plus deux lignes), avec une
-censure aléatoire à droite, pour les modèles maladie--décès paramétriques et
-semi-paramétriques, sous les formulations contraintes et non contraintes.
+Generates a dataset in either long format (an individual is represented by at least
+two rows) or short format (an individual is represented by at most two rows), with
+random right censoring, for parametric and semi-parametric illness--death models
+under constrained and unconstrained formulations.
 }
 \examples{
 library(flexsurv)

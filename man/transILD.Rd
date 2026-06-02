@@ -15,43 +15,42 @@ transILD(
 )
 }
 \arguments{
-\item{initial_data}{Base de données sous format court ou long.}
+\item{initial_data}{Dataset in short or long format.}
 
-\item{identifiant}{Nom de la colonne correspondant à l'identifiant
-de chaque individu.}
+\item{identifiant}{Name of the column corresponding to the individual
+identifier.}
 
-\item{observation}{Nom de la colonne correspondant à l'indicateur
-d'événement.}
+\item{observation}{Name of the column corresponding to the event
+indicator.}
 
-\item{indicateur}{Nom de la colonne correspondant à l'indicateur
-de maladie.}
+\item{indicateur}{Name of the column corresponding to the illness
+indicator.}
 
-\item{tempsUn}{Nom de la colonne correspondant au temps d'entrée
-dans un état $k$.}
+\item{tempsUn}{Name of the column corresponding to the entry time
+into state $k$.}
 
-\item{tempsDeux}{Nom de la colonne correspondant au temps de sortie
-d'un état $k$.}
+\item{tempsDeux}{Name of the column corresponding to the exit time
+from state $k$.}
 
-\item{format_long}{Indique si la base de données est déjà sous
-format long (\code{TRUE}) ou sous format court (\code{FALSE}).}
+\item{format_long}{Indicates whether the dataset is already in
+long format (\code{TRUE}) or in short format (\code{FALSE}).}
 }
 \value{
-La fonction retourne une base de données contenant les variables :
-\code{id} (identifiant de l'individu), \code{start} (temps d'entrée dans l'état $k$),
-\code{stop} (temps de sortie de l'état $k$), \code{status} (indique si la transition
-$k -> l$ est observée), \code{from} (état de départ), \code{to} (état d'arrivée),
-ainsi que les covariables présentes dans la base de données initiale.
+The function returns a dataset containing the variables:
+\code{id} (individual identifier), \code{start} (entry time into state $k$),
+\code{stop} (exit time from state $k$), \code{status} (indicates whether the
+transition $k -> l$ is observed), \code{from} (starting state), \code{to}
+(destination state), as well as the covariates present in the initial dataset.
 }
 \description{
-Transforme une base de données sous un format long compatible avec
-les fonctions du package. Les fonctions de vraisemblance du package
-sont construites en supposant que les données sont organisées sous
-un format long. Cette fonction permet également de reformater toute base de données,
-qu'elle soit initialement sous format court ou long, selon la structure
-requise par les fonctions du package. Nous recommandons donc aux utilisateurs
-d'utiliser préalablement la fonction \code{transILD} avant de passer un jeu
-de données aux fonctions \code{phild}, \code{phildII},
-\code{phildtest} et \code{phildtestII}.
+Transforms a dataset into a long format compatible with the package functions.
+The likelihood functions implemented in the package are constructed under the
+assumption that the data are organized in long format. This function also allows
+any dataset, whether initially in short or long format, to be reformatted
+according to the structure required by the package functions. We therefore
+recommend that users first apply the \code{transILD} function before passing
+a dataset to the functions \code{phild}, \code{phildII},
+\code{phildtest}, and \code{phildtestII}.
 }
 \examples{
 library(survival)

@@ -15,37 +15,35 @@ phildtestII(
 )
 }
 \arguments{
-\item{Lambda}{Matrice des valeurs initiales des paramètres de dimension
-$(2 * 3)$.}
+\item{Lambda}{Matrix of initial parameter values of dimension $(2 * 3)$.}
 
-\item{beta}{Valeur initiale du paramètre de proportionnalité.
-Cet argument est utilisé uniquement pour l'estimation du modèle
-maladie--décès contraint.}
+\item{beta}{Initial value of the proportionality parameter.
+This argument is used only for estimating the constrained
+illness--death model.}
 
-\item{betax}{Matrice des valeurs initiales des coefficients des covariables.}
+\item{betax}{Matrix of initial values for covariate coefficients.}
 
-\item{distribution}{Nom du modèle utilisé. Les valeurs possibles sont :
-exponentielle constante par morceaux (\code{"pwexp"}) et
-approximation linéaire par morceaux (\code{"pla"}).
-Le modèle par défaut est \code{"pwexp"}.}
+\item{distribution}{Name of the model used. Possible values are:
+piecewise constant exponential (\code{"pwexp"}) and
+piecewise linear approximation (\code{"pla"}).
+The default model is \code{"pwexp"}.}
 
-\item{dataset}{Base de données utilisée pour l'estimation.}
+\item{dataset}{Dataset used for estimation.}
 
-\item{breakpoints}{Vecteur des points de coupure pour l'approximation
-linéaire par morceaux ou matrice des intervalles pour
-l'exponentielle constante par morceaux.}
+\item{breakpoints}{Vector of cut points for the piecewise linear approximation
+or matrix of intervals for the piecewise constant exponential model.}
 
-\item{NomCovariable}{Vecteur contenant les noms des covariables
-présentes dans la base de données.}
+\item{NomCovariable}{Vector containing the names of the covariates
+included in the dataset.}
 }
 \value{
-La fonction retourne la statistique du test du rapport de vraisemblance
-ainsi que la p-value associée.
+The function returns the likelihood ratio test statistic
+along with the associated p-value.
 }
 \description{
-Effectue le test du rapport de vraisemblance entre le modèle maladie--décès
-contraint et le modèle non contraint, en considérant l'exponentielle
-constante par morceaux et l'approximation linéaire par morceaux.
+Performs a likelihood ratio test between the constrained and unconstrained
+illness--death models, considering the piecewise constant exponential model
+and the piecewise linear approximation.
 }
 \seealso{
 phildtest

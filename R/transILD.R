@@ -1,40 +1,39 @@
 #' transILD
 #'
-#' Transforme une base de données sous un format long compatible avec
-#' les fonctions du package. Les fonctions de vraisemblance du package
-#' sont construites en supposant que les données sont organisées sous
-#' un format long. Cette fonction permet également de reformater toute base de données,
-#' qu'elle soit initialement sous format court ou long, selon la structure
-#' requise par les fonctions du package. Nous recommandons donc aux utilisateurs
-#' d'utiliser préalablement la fonction \code{transILD} avant de passer un jeu
-#' de données aux fonctions \code{phild}, \code{phildII},
-#' \code{phildtest} et \code{phildtestII}.
+#' Transforms a dataset into a long format compatible with the package functions.
+#' The likelihood functions implemented in the package are constructed under the
+#' assumption that the data are organized in long format. This function also allows
+#' any dataset, whether initially in short or long format, to be reformatted
+#' according to the structure required by the package functions. We therefore
+#' recommend that users first apply the \code{transILD} function before passing
+#' a dataset to the functions \code{phild}, \code{phildII},
+#' \code{phildtest}, and \code{phildtestII}.
 #'
-#' @param initial_data Base de données sous format court ou long.
+#' @param initial_data Dataset in short or long format.
 #'
-#' @param identifiant Nom de la colonne correspondant à l'identifiant
-#' de chaque individu.
+#' @param identifiant Name of the column corresponding to the individual
+#' identifier.
 #'
-#' @param observation Nom de la colonne correspondant à l'indicateur
-#' d'événement.
+#' @param observation Name of the column corresponding to the event
+#' indicator.
 #'
-#' @param indicateur Nom de la colonne correspondant à l'indicateur
-#' de maladie.
+#' @param indicateur Name of the column corresponding to the illness
+#' indicator.
 #'
-#' @param tempsUn Nom de la colonne correspondant au temps d'entrée
-#' dans un état $k$.
+#' @param tempsUn Name of the column corresponding to the entry time
+#' into state $k$.
 #'
-#' @param tempsDeux Nom de la colonne correspondant au temps de sortie
-#' d'un état $k$.
+#' @param tempsDeux Name of the column corresponding to the exit time
+#' from state $k$.
 #'
-#' @param format_long Indique si la base de données est déjà sous
-#' format long (\code{TRUE}) ou sous format court (\code{FALSE}).
+#' @param format_long Indicates whether the dataset is already in
+#' long format (\code{TRUE}) or in short format (\code{FALSE}).
 #'
-#' @return La fonction retourne une base de données contenant les variables :
-#' \code{id} (identifiant de l'individu), \code{start} (temps d'entrée dans l'état $k$),
-#' \code{stop} (temps de sortie de l'état $k$), \code{status} (indique si la transition
-#' $k -> l$ est observée), \code{from} (état de départ), \code{to} (état d'arrivée),
-#' ainsi que les covariables présentes dans la base de données initiale.
+#' @return The function returns a dataset containing the variables:
+#' \code{id} (individual identifier), \code{start} (entry time into state $k$),
+#' \code{stop} (exit time from state $k$), \code{status} (indicates whether the
+#' transition $k -> l$ is observed), \code{from} (starting state), \code{to}
+#' (destination state), as well as the covariates present in the initial dataset.
 #'
 #' @examples
 #' library(survival)
@@ -62,17 +61,17 @@ transILD <- function(initial_data, identifiant = NULL, observation = NULL,
     nouvelle_base <- initial_data
     nom_cible <- c("id", "from", "to","status","start","stop")
     for(nom_final in nom_cible){
-      cat("Saisir le nom de la colonne de votre base correspondant a ", nom_final," : ", sep = " ")
+      cat("Enter the name of the column in your dataset corresponding to ", nom_final," : ", sep = " ")
       nouveau_nom <- scan(what = character(),nlines = 1, quiet = TRUE)
       teste <- nouveau_nom %in% colnames(initial_data)
       conteur <- 0
       while(!teste){
         conteur <- conteur + 1
         if(conteur > 3){
-          stop("Veuillez reprendre à plus de 3 erreurs")
+          stop("Please restart after more than 3 errors")
         }
-        cat(nouveau_nom , "est introuvable dans votre base de donnée")
-        cat("Veuillez saisir de nouveau  le nom de la colonne de votre base correspondant a ", nom_final," : ", sep = " ")
+        cat(nouveau_nom , "was not found in your dataset")
+        cat("Please re-enter the name of the column in your dataset corresponding to ", nom_final," : ", sep = " ")
         nouveau_nom <- scan(what = character(), nlines = 1, quiet = TRUE)
         teste <- nouveau_nom %in% colnames(initial_data)
       }
@@ -111,5 +110,3 @@ transILD <- function(initial_data, identifiant = NULL, observation = NULL,
   transformed_data = data.frame(transformed_data)
   return( transformed_data )
 }
-
-

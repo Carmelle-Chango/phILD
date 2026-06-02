@@ -16,39 +16,39 @@ phildtest(
 )
 }
 \arguments{
-\item{lambda}{Vecteur des valeurs initiales des paramètres d'échelle des
-fonctions d'intensité de base pour les lois considérées (Weibull, Gompertz
-et log-logistique généralisée).}
+\item{lambda}{Vector of initial values for the scale parameters of the
+baseline intensity functions for the considered distributions (Weibull,
+Gompertz, and generalized log-logistic).}
 
-\item{alpha}{Vecteur des valeurs initiales des paramètres de forme
-pour les lois considérées (Weibull, Gompertz et log-logistique généralisée).}
+\item{alpha}{Vector of initial values for the shape parameters of the
+considered distributions (Weibull, Gompertz, and generalized log-logistic).}
 
-\item{rho}{Vecteur des valeurs initiales des paramètres de position
-de la loi log-logistique généralisée.}
+\item{rho}{Vector of initial values for the location parameters of the
+generalized log-logistic distribution.}
 
-\item{beta}{Valeur initiale du paramètre de proportionnalité.
-Cet argument est utilisé uniquement pour l'estimation du modèle
-maladie--décès contraint.}
+\item{beta}{Initial value of the proportionality parameter.
+This argument is used only for estimating the constrained
+illness--death model.}
 
-\item{betax}{Matrice des valeurs initiales des coefficients des covariables.}
+\item{betax}{Matrix of initial values for covariate coefficients.}
 
-\item{distribution}{Nom du modèle utilisé. Les valeurs possibles sont :
-Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}) et
-log-logistique généralisée (\code{"gll"}). Le modèle par défaut est Weibull.}
+\item{distribution}{Name of the model used. Possible values are:
+Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}), and
+generalized log-logistic (\code{"gll"}). The default model is Weibull.}
 
-\item{dataset}{Base de données utilisée pour l'estimation.}
+\item{dataset}{Dataset used for estimation.}
 
-\item{NomCovariable}{Vecteur contenant les noms des covariables
-présentes dans la base de données.}
+\item{NomCovariable}{Vector containing the names of the covariates
+included in the dataset.}
 }
 \value{
-La fonction retourne la statistique du test du rapport de vraisemblance
-ainsi que la p-value associée.
+The function returns the likelihood ratio test statistic
+along with the associated p-value.
 }
 \description{
-Effectue le test du rapport de vraisemblance entre le modèle maladie--décès
-contraint et le modèle non contraint, en considérant les lois de Weibull,
-de Gompertz et log-logistique généralisée.
+Performs a likelihood ratio test between the constrained and unconstrained
+illness--death models, considering Weibull, Gompertz, and generalized
+log-logistic distributions.
 }
 \seealso{
 phildII

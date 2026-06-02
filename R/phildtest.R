@@ -1,38 +1,36 @@
 #' phildtest
 #'
-#' Effectue le test du rapport de vraisemblance entre le modèle maladie--décès
-#' contraint et le modèle non contraint, en considérant les lois de Weibull,
-#' de Gompertz et log-logistique généralisée.
+#' Performs a likelihood ratio test between the constrained and unconstrained
+#' illness--death models, considering Weibull, Gompertz, and generalized
+#' log-logistic distributions.
 #'
-#' @param lambda Vecteur des valeurs initiales des paramètres d'échelle des
-#' fonctions d'intensité de base pour les lois considérées (Weibull, Gompertz
-#' et log-logistique généralisée).
+#' @param lambda Vector of initial values for the scale parameters of the
+#' baseline intensity functions for the considered distributions (Weibull,
+#' Gompertz, and generalized log-logistic).
 #'
-#' @param alpha Vecteur des valeurs initiales des paramètres de forme
-#' pour les lois considérées (Weibull, Gompertz et log-logistique généralisée).
+#' @param alpha Vector of initial values for the shape parameters of the
+#' considered distributions (Weibull, Gompertz, and generalized log-logistic).
 #'
-#' @param rho Vecteur des valeurs initiales des paramètres de position
-#' de la loi log-logistique généralisée.
+#' @param rho Vector of initial values for the location parameters of the
+#' generalized log-logistic distribution.
 #'
-#' @param beta Valeur initiale du paramètre de proportionnalité.
-#' Cet argument est utilisé uniquement pour l'estimation du modèle
-#' maladie--décès contraint.
+#' @param beta Initial value of the proportionality parameter.
+#' This argument is used only for estimating the constrained
+#' illness--death model.
 #'
-#' @param betax Matrice des valeurs initiales des coefficients des covariables.
+#' @param betax Matrix of initial values for covariate coefficients.
 #'
-#' @param distribution Nom du modèle utilisé. Les valeurs possibles sont :
-#' Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}) et
-#' log-logistique généralisée (\code{"gll"}). Le modèle par défaut est Weibull.
+#' @param distribution Name of the model used. Possible values are:
+#' Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}), and
+#' generalized log-logistic (\code{"gll"}). The default model is Weibull.
 #'
+#' @param dataset Dataset used for estimation.
 #'
-#' @param dataset Base de données utilisée pour l'estimation.
+#' @param NomCovariable Vector containing the names of the covariates
+#' included in the dataset.
 #'
-#' @param NomCovariable Vecteur contenant les noms des covariables
-#' présentes dans la base de données.
-#'
-#' @return La fonction retourne la statistique du test du rapport de vraisemblance
-#' ainsi que la p-value associée.
-#'
+#' @return The function returns the likelihood ratio test statistic
+#' along with the associated p-value.
 #' @seealso phildII
 #'
 #' @export
@@ -102,451 +100,177 @@ phildtest <- function(lambda= NULL, alpha= NULL, rho = NULL,beta = NULL,
     class = "htest"
   )
 }
-
 #' @noRd
 logincomplet_weibull <- function(par, data, NomCovariable=NULL){
-
   l12 <- par[1]
-
   l13 <- par[2]
-
   a12 <- par[3]
-
   a13 <- par[4]
-
-
-
   beta<- par[5]
-
   data <- data.frame(data)
-
-
-
   if(!is.null(NomCovariable)){
-
-
-
     X <- as.matrix(data[,NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[5+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[5+((1+ncov):(2*ncov))])
-
   }else{
-
     data$lin12 <- data$lin13 <- 0
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*(log(a13*l13*(stop)^(a13 - 1)) +  lin13)
-
                                                            - l13*((stop)^a13)*exp(lin13) ))
-
-
-
   L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*(log(a12*l12*(stop)^(a12-1)  ) + lin12)
-
                                                            - l12*((stop)^a12)*exp(lin12)))
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*(log(a13*l13*exp(beta)*(stop)^(a13 - 1) ) + lin13)
-
                                                            -l13*exp(beta)*(stop^a13 - start^a13 )*exp(lin13)))
 
-
-
   L <- L12 + L23 + L13
-
-
-
   return(-L)
-
 }
-
 #' @noRd
 logincomplet_gompertz <- function(par,data, NomCovariable=NULL){
-
   a12 <- par[1]
-
   a13 <- par[2]
-
   r12 <- par[3]
-
   r13 <- par[4]
-
   beta <- par[5]
-
-
-
   data <- data.frame(data)
-
   if(!is.null(NomCovariable)){
-
     X <- as.matrix(data[, NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[5+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[5+((1+ncov):(2*ncov))])
-
   }else{
-
     data$lin12 <- data$lin13 <- 0
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*(log(a13*exp(r13*stop) ) + lin13 )
-
                                                            -(a13/r13)*(exp(r13*stop) - 1)*exp(lin13)) )
-
-
-
   L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*(log(a12*exp(r12*stop)) + lin12 )
-
                                                            -(a12/r12)*(exp(r12*stop) - 1)*exp(lin12)) )
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*(log(a13*exp(beta)*exp(r13*stop)) + lin13 )
-
                                                            - ((a13*exp(beta))/r13)*( exp(r13*stop) - exp(r13*start) )*exp(lin13) ))
 
-
-
   L <- L12 + L23 + L13
-
   return(-L)
-
 }
-
-
-
-
 #' @noRd
 logincomplet_gll <- function(par,data, NomCovariable=NULL){
-
   l12 <- par[1]
-
   l13 <- par[2]
-
-
-
   a12 <- par[3]
-
   a13 <- par[4]
-
-
-
   r12 <- par[5]
-
   r13 <- par[6]
-
-
-
   beta <- par[7]
-
-
-
   data <- data.frame(data)
-
-
-
   if(!is.null(NomCovariable)){
-
-
-
     X <- as.matrix(data[,NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[7+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[7+((1+ncov):(2*ncov))])
-
   }else{
-
     data$lin12 <- data$lin13 <- 0
-
   }
-
-
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*( log(a13*l13*(stop)^(a13 -1))
-
                                                                     - log(1 + r13*(stop)^a13) + lin13)
-
                                                            - (l13/r13)*log(1 + r13*(stop)^a13)*exp(lin13)  ))
-
-
-
-
-
   L12 <- with(data[(data$from == 1)&(data$to ==2), ], sum(status*( log(a12*l12*(stop)^(a12 -1))
-
                                                                    - log(1 + r12*(stop)^a12) + lin12)
-
                                                           - (l12/r12)*log(1 + r12*(stop)^a12)*exp(lin12)  ))
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum( status*( log(a13*l13*exp(beta)*(stop)^(a13 -1))
-
                                                                      - log(1 + r13*(stop)^a13) + lin13)
-
                                                             - (l13*exp(beta)/r13)* ( log(1 + r13*(stop)^a13)
-
                                                                                      - log(1 + r13*(start)^a13))*exp(lin13)  ))
-
-
-
   L <- L12 + L23 + L13
-
-
-
   return(-L)
-
 }
-
-
 #' @noRd
 logcomplet_weibull <- function(par, data, NomCovariable = NULL){
-
   l12 <- par[1]
-
   l13 <- par[2]
-
   l23 <- par[3]
-
   a12 <- par[4]
-
   a13 <- par[5]
-
   a23 <- par[6]
-
-
-
   data <- data.frame(data)
-
-
-
   if(is.null(NomCovariable)){
-
     data$lin12 <- data$lin13 <- data$lin23 <- 0
-
   }else{
-
     X <- as.matrix(data[,NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[6+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[6+((1+ncov):(2*ncov))])
-
     data$lin23 <- as.vector(X %*% par[(2*ncov+7):length(par)])
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*(log(a13*l13*(stop)^(a13 - 1)) + lin13)
-
                                                            - l13*((stop)^a13)*exp(lin13)))
-
-
-
   L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*(log(a12*l12*(stop)^(a12-1)) + lin12)
-
                                                            -  l12*((stop)^a12)*exp(lin12)))
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*(log(a23*l23*(stop)^(a23 - 1) ) + lin23)
-
                                                            - l23*(stop^a23 - start^a23 )*exp(lin23)))
-
-
-
   L <- L12 + L23 + L13
-
-
-
   return(-L)
-
-
-
 }
-
 #' @noRd
 logcomplet_gompertz <- function(par,data, NomCovariable=NULL){
-
-
-
   a12 <- par[1]
-
   a13 <- par[2]
-
   a23 <- par[3]
-
-
-
   r12 <- par[4]
-
   r13 <- par[5]
-
   r23 <- par[6]
-
-
-
   data <- data.frame(data)
-
-
-
   if(!is.null(NomCovariable)){
-
     X <- as.matrix(data[,NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[6+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[6+((1+ncov):(2*ncov))])
-
     data$lin23 <- as.vector(X %*% par[(2*ncov+7):length(par)])
-
   }else{
-
     data$lin12 <- data$lin13 <- data$lin23 <- 0
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*(log(a13*exp(r13*stop) ) + lin13 )
-
                                                            -(a13/r13)*(exp(r13*stop) - 1)*exp(lin13) ) )
-
-
-
   L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*(log(a12*exp(r12*stop)) + lin12 )
-
                                                            -(a12/r12)*(exp(r12*stop) - 1)*exp(lin12)) )
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*(log(a23*exp(r23*stop)) + lin23  )
-
                                                            - (a23/r23)*( exp(r23*stop) - exp(r23*start) )*exp(lin23)  ))
-
-
-
   L <- L12 + L23 + L13
-
   return(-L)
-
 }
-
-
-
 #' @noRd
 logcomplet_gll <- function(par,data, NomCovariable=NULL){
-
   l12 <- par[1]
-
   l13 <- par[2]
-
   l23 <- par[3]
-
-
-
   a12 <- par[4]
-
   a13 <- par[5]
-
   a23 <- par[6]
-
-
-
   r12 <- par[7]
-
   r13 <- par[8]
-
   r23 <- par[9]
-
-
-
   data <- data.frame(data)
-
-
-
   if(!is.null(NomCovariable)){
-
     X <- as.matrix(data[,NomCovariable])
-
     ncov <- ncol(X)
-
     data$lin12 <- as.vector(X %*% par[9+(1:ncov)])
-
     data$lin13 <- as.vector(X %*% par[9+((1+ncov):(2*ncov))])
-
     data$lin23 <- as.vector(X %*% par[(2*ncov+10):length(par)])
-
   }else{
-
     data$lin12 <- data$lin13 <- data$lin23 <- 0
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*( log(a13*l13*(stop)^(a13 -1))
-
                                                                     - log(1 + r13*(stop)^a13) + lin13 )
-
                                                            - (l13/r13)*log(1 + r13*(stop)^a13)*exp(lin13) ))
-
-
-
-
-
   L12 <- with(data[(data$from == 1)&(data$to ==2), ], sum(status*( log(a12*l12*(stop)^(a12 -1))
-
                                                                    - log(1 + r12*(stop)^a12) + lin12 )
-
                                                           - (l12/r12)*log(1 + r12*(stop)^a12)*exp(lin12)  ))
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum( status*( log(a23*l23*(stop)^(a23 -1))
-
                                                                      - log(1 + r23*(stop)^a23) + lin23 )
-
                                                             - (l23/r23)* ( log(1 + r23*(stop)^a23)
-
                                                                            - log(1 + r23*(start)^a23))*exp(lin23) ))
-
-
-
   L <- L12 + L23 + L13
-
-
-
   return(-L)
-
 }
-
-
-
 #' @noRd
 phild1 <- function(lambda= NULL, alpha = NULL, beta = NULL, rho = NULL, betax = NULL,
                    distribution= "weibull", nom_loglik = "logcomplet",dataset = NULL,NomCovariable= NULL){
@@ -632,73 +356,34 @@ phild1 <- function(lambda= NULL, alpha = NULL, beta = NULL, rho = NULL, betax = 
   cat("Convergence status (0 = success): ", optim_log$convergence, "\n")
   cat("\n")
   parametres_estimes <- optim_log$par
-
-
-
-  ### Calcul sécurisé de la variance
-
-
-
   variance_estime <- tryCatch({
-
     diag(solve(optim_log$hessian))
-
   }, error = function(e) {
-
     return(NULL)
-
   })
-
-
-
-  ### Gestion des résultats selon si la variance a pu être calculée
-
   if (!is.null(variance_estime)) {
-
-    # Cas de succès : calcul des tests de Wald
-
     varetst <- sqrt(variance_estime)
     tetst <- parametres_estimes / varetst
     zts <- qnorm(1-0.05/2)
     OptimResult <- data.frame(
-
       Estimate = parametres_estimes,
-
       Se = varetst,
-
       Z_stat   = tetst,
       ICL   = parametres_estimes - varetst*zts,
       ICU   = parametres_estimes + varetst*zts,
-
       row.names = parametres_names
-
     )
 
   } else {
-
-    # Cas d'échec : on remplit avec des NA pour garder la structure du tableau
-
     message("Calcul de la variance impossible (matrice singulière).")
-
-
-
     OptimResult <- data.frame(
-
       Estimate = parametres_estimes,
-
       Se = NA,
-
       Z_stat   = NA,
-
       row.names = parametres_names
-
     )
-
   }
-
   return( OptimResult)
-
-
 }
 
 

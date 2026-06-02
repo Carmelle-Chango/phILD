@@ -1,36 +1,32 @@
 #' phildtestII
 #'
-#' Effectue le test du rapport de vraisemblance entre le modèle maladie--décès
-#' contraint et le modèle non contraint, en considérant l'exponentielle
-#' constante par morceaux et l'approximation linéaire par morceaux.
+#' Performs a likelihood ratio test between the constrained and unconstrained
+#' illness--death models, considering the piecewise constant exponential model
+#' and the piecewise linear approximation.
 #'
-#' @param Lambda Matrice des valeurs initiales des paramètres de dimension
-#' $(2 * 3)$.
+#' @param Lambda Matrix of initial parameter values of dimension $(2 * 3)$.
 #'
-#' @param beta Valeur initiale du paramètre de proportionnalité.
-#' Cet argument est utilisé uniquement pour l'estimation du modèle
-#' maladie--décès contraint.
+#' @param beta Initial value of the proportionality parameter.
+#' This argument is used only for estimating the constrained
+#' illness--death model.
 #'
-#' @param betax Matrice des valeurs initiales des coefficients des covariables.
+#' @param betax Matrix of initial values for covariate coefficients.
 #'
-#' @param distribution Nom du modèle utilisé. Les valeurs possibles sont :
-#' exponentielle constante par morceaux (\code{"pwexp"}) et
-#' approximation linéaire par morceaux (\code{"pla"}).
-#' Le modèle par défaut est \code{"pwexp"}.
+#' @param distribution Name of the model used. Possible values are:
+#' piecewise constant exponential (\code{"pwexp"}) and
+#' piecewise linear approximation (\code{"pla"}).
+#' The default model is \code{"pwexp"}.
 #'
+#' @param breakpoints Vector of cut points for the piecewise linear approximation
+#' or matrix of intervals for the piecewise constant exponential model.
 #'
-#' @param breakpoints Vecteur des points de coupure pour l'approximation
-#' linéaire par morceaux ou matrice des intervalles pour
-#' l'exponentielle constante par morceaux.
+#' @param dataset Dataset used for estimation.
 #'
-#' @param dataset Base de données utilisée pour l'estimation.
+#' @param NomCovariable Vector containing the names of the covariates
+#' included in the dataset.
 #'
-#' @param NomCovariable Vecteur contenant les noms des covariables
-#' présentes dans la base de données.
-#'
-#' @return La fonction retourne la statistique du test du rapport de vraisemblance
-#' ainsi que la p-value associée.
-#'
+#' @return The function returns the likelihood ratio test statistic
+#' along with the associated p-value.
 #' @seealso phildtest
 #'
 #' @export
@@ -111,8 +107,6 @@ phildtestII <- function(Lambda,beta = NULL,betax = NULL,
 
   }
 }
-
-
 #' @noRd
 logincomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
   q12 <- par[1]
@@ -137,10 +131,8 @@ logincomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
   L <- L12 + L23 + L13
   return(-L)
 }
-
 #' @noRd
 logincomplet_pla <- function(par, breakpoints, data , NomCovariable=NULL){
-
   if(!is.null(NomCovariable)){
     X <- as.matrix(data[,NomCovariable])
     ncov <- ncol(X)
@@ -182,72 +174,34 @@ logincomplet_pla <- function(par, breakpoints, data , NomCovariable=NULL){
   L <- L12 + L23 + L13
   return(-L)
 }
-
-
-
 #' @noRd
 logcomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
-
   q12 <- par[1]
-
   q13 <- par[2]
-
   q23 <- par[3]
-
-
-
   data <- data.frame(data)
-
   if(!is.null(NomCovariable)){
-
     X <- as.matrix(data[, NomCovariable])
-
     ncov <- ncol(X)
-
     sequence <- seq(from = 4, length.out = 3*ncov)
-
     data$lin12 <- as.vector(X %*% par[sequence[1:ncov]])
-
     data$lin13 <- as.vector(X %*% par[sequence[(ncov+1):(2*ncov)]])
-
     data$lin23 <- as.vector(X %*% par[sequence[(2*ncov+1):(3*ncov)]])
-
   }else{
-
     data$lin12 <- data$lin13 <- data$lin23 <- 0
-
   }
-
-
-
   L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q13) + lin13)
-
                                                            - q13*int1_vec(stop, breakpoints)*exp(lin13)  ))
-
-
-
   L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*indi_vec(stop, breakpoints)*(log(q12) + lin12 )
-
                                                            - q12*int1_vec(stop, breakpoints)*exp(lin12) ))
-
-
-
   L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q23)  + lin23 )
-
                                                            - q23*int2_vec(start, stop, breakpoints)*exp(lin23) ))
-
-
-
   L <- L12 + L23 + L13
 
   return(-L)
-
 }
-
-
 #' @noRd
 logcomplet_pla <- function(par, breakpoints, data = NULL, NomCovariable=NULL){
-
   if(!is.null(NomCovariable)){
     X <- as.matrix(data[,NomCovariable])
     ncov <- ncol(X)
@@ -290,79 +244,43 @@ logcomplet_pla <- function(par, breakpoints, data = NULL, NomCovariable=NULL){
   L <- L12 + L23 + L13
   return(-L)
 }
-
-
 #' @noRd
 totalLoglik <- function(par, breakpoints, data = NULL, nom_loglik = "logcomplet",
-
                         NomCovariable = NULL, nbeta =NULL ){
   lambda_vec <- NULL
-
   n_L <- length(par) - nbeta
   lambda_vec <- par[1:n_L]
   n_int <- nrow(breakpoints)
   lambda_mat <- matrix(lambda_vec, nrow = n_int, byrow = FALSE)
   beta_uniques <- par[(n_L + 1):length(par)]
-
   if(nom_loglik == "logincomplet"){
     beta <- par[n_L+1]
     beta_uniques <- par[(n_L + 2):length(par)]
   }else if(nom_loglik == "logcomplet"){
     beta <- NULL
   }
-
-  # 2. Extraire les betas (le reste du vecteur)
-
-
-
   fn_name <- paste0(nom_loglik, "_pwexp")
-
   logliksum <- 0
-
   for(i in 1:n_int){
-
-    # calcul pour chaque intervalle
-
     loglik_i <- do.call(fn_name, list(par = c(lambda_mat[i,], beta, beta_uniques), breakpoints = breakpoints[i,],  data = data,
-
                                       NomCovariable = NomCovariable))
-
     logliksum <- logliksum + loglik_i
-
   }
-
   return(logliksum)
-
 }
-
-
-
-
 #' @noRd
 phildII1 <- function(Lambda= NULL, betax = NULL, beta=NULL,distribution= "pla",
-
                      nom_loglik = "logcomplet", dataset = NULL,
-
                      NomCovariable = NULL, breakpoints = NULL){
-
   beta_names <- NULL
-
   loi <- tolower(distribution)
-
   if (nom_loglik == "logincomplet") {
-
     indices  <- 1:2
-
     suffixes <- c("12", "13")
-
   } else {
-
     indices  <- 1:ncol(Lambda)
-
     suffixes <- c("12", "13", "23")
-
   }
-
   Lambda_red <- Lambda[, indices, drop = FALSE]
   n_rows = nrow(betax)
   if (is.null(betax)) {
@@ -374,11 +292,9 @@ phildII1 <- function(Lambda= NULL, betax = NULL, beta=NULL,distribution= "pla",
       beta_names <- NULL
     }
   } else {
-
     betax_red <- betax[, indices, drop = FALSE]
     if (nom_loglik == "logincomplet"){
       par_init <- c(as.vector(Lambda_red),beta, as.vector(betax_red))
-
       beta_names <- c("beta",paste0("beta", rep(1:n_rows, length(suffixes)),
                                     rep(suffixes, each = n_rows)))
     } else if (nom_loglik == "logcomplet"){
@@ -390,194 +306,87 @@ phildII1 <- function(Lambda= NULL, betax = NULL, beta=NULL,distribution= "pla",
   }
 
   stopifnot(all(Lambda > 0))
-
-  # Nombre d'intervalles (lignes) et de transitions (colonnes Lambda)
-
   n_intervalles <- nrow(Lambda_red)
-
   n_transitions <- ncol(Lambda_red)
-
   n_covariables <- if (is.null(betax)) 0 else ncol(betax[, indices, drop=FALSE])*nrow(betax)
-
-
   n_trans <- length(suffixes)
-
   lambda_names <- paste0("lambda",
-
                          rep(suffixes, times = n_intervalles),
-
                          "_intervalle_",
-
                          rep(1:n_intervalles, each = n_trans))
-
-
-
   parametres_names <- c(lambda_names, beta_names)
-
-
-
-  # Construction des bornes en suivant l'ordre des colonnes de la matrice
-
-  # R aplatit la matrice colonne par colonne pour optim
-
   low_lambda <- rep(0.00001, n_intervalles * n_transitions)
-
   if (nom_loglik == "logincomplet"){
     low_beta   <- rep(-Inf,  n_covariables+1)
   } else if (nom_loglik == "logcomplet"){
     low_beta   <- rep(-Inf,  n_covariables)
   }
-
-
-
-
   Low <- c(low_lambda, low_beta)
-
   Upe <- rep(Inf, length(Low))
-
-
-
-  # récupération de la fonction
-
   fn_name <- switch (loi,
-
                      "pwexp" = "totalLoglik",
-
                      "pla" = paste0(nom_loglik, "_", loi),
-
                      stop("Loi non supportée")
-
   )
-
-
-
-  # vérification d'existence
-
-
-
   if (!exists(fn_name, mode = "function")){
-
     stop(sprintf("La loi '%s' n'existe pas. Fonction attendue : %s()",loi,
-
                  fn_name))
-
   }
-
-
-
   fn_objective <- get(fn_name, mode = "function")
-
-
   nbeta = n_covariables
   if(nom_loglik == "logincomplet"){
     nbeta = nbeta + 1
   }
 
   arguments_specifiques <- switch (loi,
-
                                    "pwexp" = list(nom_loglik = nom_loglik, nbeta=nbeta),
-
                                    "pla" = list()
-
   )
-
-
-
   args_optim <- list(
-
     par     = par_init,
-
     fn      = fn_objective,
-
     method  = "L-BFGS-B",
-
     breakpoints = breakpoints,
-
     data = dataset,
-
     NomCovariable = NomCovariable,
-
     lower   = Low,
-
     upper   = Upe,
-
     control = list(maxit = 1000, ndeps = rep(1e-4, length(par_init))),
-
     hessian = TRUE
-
   )
-
   optim_log <- do.call(optim, c(args_optim, arguments_specifiques))
-
-  ################################################
-
   cat("\n >>> Optimization diagnostics:\n")
-
   cat("Convergence status (0 = success): ", optim_log$convergence, "\n")
-
   cat("\n")
-
   parametres_estimes <- optim_log$par
-
-  ### Calcul sécurisé de la variance
-
   variance_estime <- tryCatch({
-
     diag(solve(optim_log$hessian))
-
   }, error = function(e) {
-
     return(NULL)
-
   })
-
-  ### Gestion des résultats selon si la variance a pu être calculée
-
   if (!is.null(variance_estime)) {
-
-    # Cas de succès : calcul des tests de Wald
     varetst <- sqrt(variance_estime)
     tetst <- parametres_estimes / varetst
     zts <- qnorm(1-0.05/2)
     OptimResult <- data.frame(
-
       Estimate = parametres_estimes,
-
       Se = varetst,
-
       Z_stat   = tetst,
       ICL   = parametres_estimes - varetst*zts,
       ICU   = parametres_estimes + varetst*zts,
-
       row.names = parametres_names
-
     )
-
   } else {
-
-    # Cas d'échec : on remplit avec des NA pour garder la structure du tableau
-
     message("Calcul de la variance impossible (matrice singulière).")
-
-
     OptimResult <- data.frame(
-
       Estimate = parametres_estimes,
-
       Se = NA,
-
       Z_stat   = NA,
-
       row.names = parametres_names
-
     )
-
   }
-
-
-
   return(OptimResult)
-
 }
+
 
 
