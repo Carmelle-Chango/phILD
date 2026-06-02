@@ -15,7 +15,7 @@ phildtestII(
 )
 }
 \arguments{
-\item{Lambda}{Matrix of initial parameter values of dimension $(2 * 3)$.}
+\item{Lambda}{Matrix of initial parameter values of dimension (2 * 3).}
 
 \item{beta}{Initial value of the proportionality parameter.
 This argument is used only for estimating the constrained

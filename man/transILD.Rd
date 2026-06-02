@@ -27,19 +27,19 @@ indicator.}
 indicator.}
 
 \item{tempsUn}{Name of the column corresponding to the entry time
-into state $k$.}
+into state k.}
 
 \item{tempsDeux}{Name of the column corresponding to the exit time
-from state $k$.}
+from state k.}
 
 \item{format_long}{Indicates whether the dataset is already in
 long format (\code{TRUE}) or in short format (\code{FALSE}).}
 }
 \value{
 The function returns a dataset containing the variables:
-\code{id} (individual identifier), \code{start} (entry time into state $k$),
-\code{stop} (exit time from state $k$), \code{status} (indicates whether the
-transition $k -> l$ is observed), \code{from} (starting state), \code{to}
+\code{id} (individual identifier), \code{start} (entry time into state k),
+\code{stop} (exit time from state k), \code{status} (indicates whether the
+transition k -> l is observed), \code{from} (starting state), \code{to}
 (destination state), as well as the covariates present in the initial dataset.
 }
 \description{

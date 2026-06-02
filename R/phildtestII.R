@@ -4,7 +4,7 @@
 #' illness--death models, considering the piecewise constant exponential model
 #' and the piecewise linear approximation.
 #'
-#' @param Lambda Matrix of initial parameter values of dimension $(2 * 3)$.
+#' @param Lambda Matrix of initial parameter values of dimension (2 * 3).
 #'
 #' @param beta Initial value of the proportionality parameter.
 #' This argument is used only for estimating the constrained

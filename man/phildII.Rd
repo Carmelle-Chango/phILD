@@ -16,7 +16,7 @@ phildII(
 )
 }
 \arguments{
-\item{Lambda}{Matrix of initial parameter values of dimension $(2 * 3)$.}
+\item{Lambda}{Matrix of initial parameter values of dimension (2 * 3).}
 
 \item{betax}{Matrix of initial values for covariate coefficients.}
 

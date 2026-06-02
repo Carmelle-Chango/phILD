@@ -27,26 +27,26 @@ random right censoring.}
 \item{lambda}{Vector of scale parameters for the baseline intensity functions
 corresponding to the considered distributions (Weibull, Gompertz, and generalized
 log-logistic). The columns respectively represent the generation parameters for the
-transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$. For the piecewise constant exponential
+transitions 1 -> 2, 1 -> 3, and 2 -> 3. For the piecewise constant exponential
 distribution, \code{lambda} is a matrix whose rows represent the parameters associated
 with each interval. This parameter is not used for the piecewise linear approximation.}
 
 \item{alpha}{Vector of shape parameters for the baseline intensity functions
 corresponding to the considered distributions (Weibull, Gompertz, and generalized
 log-logistic). The columns respectively represent the generation parameters for the
-transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$. This parameter is not used for the
+transitions 1 -> 2, 1 -> 3, and 2 -> 3. This parameter is not used for the
 piecewise constant exponential distribution nor for the piecewise linear approximation.}
 
 \item{rho}{Vector of location parameters for the generalized log-logistic distribution.
 The columns respectively represent the generation parameters for the transitions
-$1 -> 2$, $1 -> 3$, and $2 -> 3$.}
+1 -> 2, 1 -> 3, and 2 -> 3.}
 
 \item{beta}{Matrix of covariate coefficients of dimension
-(\emph{number of covariates} $*$ 3).}
+(\emph{number of covariates} * 3).}
 
 \item{rates}{Matrix of intercept and slope parameters for the piecewise linear
 approximation. The columns respectively represent the generation parameters for the
-transitions $1 -> 2$, $1 -> 3$, and $2 -> 3$, while the rows correspond to the
+transitions 1 -> 2, 1 -> 3, and 2 -> 3, while the rows correspond to the
 parameters associated with each interval.}
 
 \item{covariable}{Number of covariates to simulate. Covariates are generated from
@@ -67,9 +67,9 @@ exponential distribution and the piecewise linear approximation.}
 }
 \value{
 The function returns a dataset containing the variables:
-\code{id} (individual identifier), \code{start} (entry time into state $k$),
-\code{stop} (exit time from state $k$), \code{status} (indicates whether the
-transition $k -> l$ is observed), \code{from} (starting state), \code{to}
+\code{id} (individual identifier), \code{start} (entry time into state k),
+\code{stop} (exit time from state k), \code{status} (indicates whether the
+transition k -> l is observed), \code{from} (starting state), \code{to}
 (destination state), as well as the generated covariates when they are included
 in the model.
 }
