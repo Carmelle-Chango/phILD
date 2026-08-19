@@ -1,4 +1,4 @@
-#' phildII
+#' phildFlex
 #'
 #' Estimates the parameters of constrained and unconstrained illness--death models
 #' using the maximum likelihood method, considering the piecewise constant exponential
@@ -49,7 +49,7 @@
 #'   lat_long = TRUE
 #' )
 #'
-#' phildII(
+#' phildFlex(
 #'   Lambda = cbind(rep(0.001, 2),
 #'                   rep(0.001, 2),
 #'                   rep(0.001, 2)),
@@ -61,7 +61,7 @@
 #'   breakpoints = cbind(c(0, 3), c(3, Inf))
 #' )
 #'
-#' phildII(
+#' phildFlex(
 #'   Lambda = cbind(rep(0.001, 2),
 #'                   rep(0.001, 2),
 #'                   rep(0.001, 2)),
@@ -77,7 +77,7 @@
 #'
 #' @export
 #'
-phildII <- function(Lambda= NULL, betax = NULL, beta=NULL,distribution= "pwexp",
+phildFlex <- function(Lambda= NULL, betax = NULL, beta=NULL,distribution= "pwexp",
                     nom_loglik = "logcomplet", dataset = NULL,
                     NomCovariable = NULL, breakpoints = NULL){
 

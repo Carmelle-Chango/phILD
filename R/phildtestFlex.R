@@ -1,4 +1,4 @@
-#' phildtestII
+#' phildtestFlex
 #'
 #' Performs a likelihood ratio test between the constrained and unconstrained
 #' illness--death models, considering the piecewise constant exponential model
@@ -30,7 +30,7 @@
 #' @seealso phildtest
 #'
 #' @export
-phildtestII <- function(Lambda,beta = NULL,betax = NULL,
+phildtestFlex <- function(Lambda,beta = NULL,betax = NULL,
                         distribution="pwexp", dataset = NULL,
                         breakpoints, NomCovariable= NULL){
 
