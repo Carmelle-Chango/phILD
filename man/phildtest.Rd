@@ -5,32 +5,33 @@
 \title{phildtest}
 \usage{
 phildtest(
-  lambda = NULL,
-  alpha = NULL,
-  rho = NULL,
-  beta = NULL,
-  betax = NULL,
+  lambda_int = NULL,
+  alpha_int = NULL,
+  rho_int = NULL,
+  beta_int = NULL,
+  betax_int = NULL,
   distribution = "weibull",
   dataset = NULL,
-  NomCovariable = NULL
+  NomCovariable = NULL,
+  cov_effect = "common"
 )
 }
 \arguments{
-\item{lambda}{Vector of initial values for the scale parameters of the
-baseline intensity functions for the considered distributions (Weibull,
-Gompertz, and generalized log-logistic).}
+\item{lambda_int}{Vector of initial values for the scale parameters of the
+baseline intensity functions for the considered distributions (Weibull
+and generalized log-logistic).}
 
-\item{alpha}{Vector of initial values for the shape parameters of the
-considered distributions (Weibull, Gompertz, and generalized log-logistic).}
+\item{alpha_int}{Vector of initial values for the shape parameters of the
+considered distributions.}
 
-\item{rho}{Vector of initial values for the location parameters of the
-generalized log-logistic distribution.}
+\item{rho_int}{Vector of initial values for the additional parameters
+of the Gompertz and generalized log-logistic distributions.}
 
-\item{beta}{Initial value of the proportionality parameter.
+\item{beta_int}{Initial value of the proportionality parameter.
 This argument is used only for estimating the constrained
 illness--death model.}
 
-\item{betax}{Matrix of initial values for covariate coefficients.}
+\item{betax_int}{Matrix of initial values for covariate coefficients.}
 
 \item{distribution}{Name of the model used. Possible values are:
 Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}), and
@@ -40,10 +41,17 @@ generalized log-logistic (\code{"gll"}). The default model is Weibull.}
 
 \item{NomCovariable}{Vector containing the names of the covariates
 included in the dataset.}
+
+\item{cov_effect}{Character string specifying the treatment of fixed
+covariate effects in the constrained illness-death model. Use
+\code{"common"} (default) to impose equal covariate effects on
+transitions 1->3 and 2->3, or \code{"specific"} to estimate separate
+covariate effects for these transitions. This argument has no effect
+on the unconstrained model.}
 }
 \value{
-The function returns the likelihood ratio test statistic
-along with the associated p-value.
+An object of class \code{"htest"} containing the likelihood
+ratio test statistic, degrees of freedom, and associated p-value.
 }
 \description{
 Performs a likelihood ratio test between the constrained and unconstrained
@@ -51,5 +59,5 @@ illness--death models, considering Weibull, Gompertz, and generalized
 log-logistic distributions.
 }
 \seealso{
-phildII
+phildtestFlex
 }

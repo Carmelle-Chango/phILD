@@ -5,33 +5,34 @@
 \title{phild}
 \usage{
 phild(
-  lambda = NULL,
-  alpha = NULL,
-  beta = NULL,
-  rho = NULL,
-  betax = NULL,
+  lambda_int = NULL,
+  alpha_int = NULL,
+  beta_int = NULL,
+  rho_int = NULL,
+  betax_int = NULL,
   distribution = "weibull",
   nom_loglik = "logcomplet",
   dataset = NULL,
-  NomCovariable = NULL
+  NomCovariable = NULL,
+  cov_effect = "common"
 )
 }
 \arguments{
-\item{lambda}{Vector of initial values for the scale parameters of the
+\item{lambda_int}{Vector of initial values for the scale parameters of the
 baseline intensity functions for the considered distributions (Weibull,
 Gompertz, and generalized log-logistic).}
 
-\item{alpha}{Vector of initial values for the shape parameters of the
+\item{alpha_int}{Vector of initial values for the shape parameters of the
 considered distributions (Weibull, Gompertz, and generalized log-logistic).}
 
-\item{beta}{Initial value of the proportionality parameter.
+\item{beta_int}{Initial value of the proportionality parameter.
 This argument is used only for estimating the constrained
 illness--death model.}
 
-\item{rho}{Vector of initial values for the location parameters of the
+\item{rho_int}{Vector of initial values for the location parameters of the
 generalized log-logistic distribution.}
 
-\item{betax}{Matrix of initial values for covariate coefficients.}
+\item{betax_int}{Matrix of initial values for covariate coefficients.}
 
 \item{distribution}{Name of the model used. Possible values are:
 Weibull (\code{"weibull"}), Gompertz (\code{"gompertz"}), and
@@ -46,6 +47,12 @@ The default is the unconstrained model.}
 
 \item{NomCovariable}{Vector containing the names of the covariates
 included in the dataset.}
+
+\item{cov_effect}{Character string specifying the treatment of fixed
+covariate effects in the constrained illness-death model. Use "common" (default)
+to impose equal covariate effects on transitions 1->3 and 2->3, or "specific"
+to estimate separate covariate effects for these transitions.
+This argument has no effect on the unconstrained model.}
 }
 \value{
 The function returns the maximum likelihood estimators of the
@@ -74,9 +81,9 @@ dataset <- transILD(
 )
 
 M <- phild(
-  lambda = rep(0.001, 3),
-  alpha = rep(0.001, 3),
-  betax = matrix(
+  lambda_int = rep(0.001, 3),
+  alpha_int = rep(0.001, 3),
+  betax_int = matrix(
     c(rep(-0.001, 3),
       rep(-0.001, 3),
       rep(-0.001, 3)),
@@ -101,5 +108,5 @@ M$`Transition 13`
 
 }
 \seealso{
-phildII
+phildFlex
 }

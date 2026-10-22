@@ -5,74 +5,84 @@
 \title{phildFlex}
 \usage{
 phildFlex(
-  Lambda = NULL,
-  betax = NULL,
-  beta = NULL,
+  lambda_int = NULL,
+  betax_int = NULL,
+  beta_int = NULL,
   distribution = "pwexp",
   nom_loglik = "logcomplet",
   dataset = NULL,
   NomCovariable = NULL,
-  breakpoints = NULL
+  breakpoints = NULL,
+  cov_effect = "common"
 )
 }
 \arguments{
-\item{Lambda}{Matrix of initial parameter values of dimension (2 * 3).}
+\item{lambda_int}{Matrix of initial baseline intensity parameters,
+with three columns corresponding to transitions 12, 13 and 23.
+For PWEXP, rows represent intervals. For PLA, rows represent
+the intensity values used to construct the linear segments.}
 
-\item{betax}{Matrix of initial values for covariate coefficients.}
+\item{betax_int}{Matrix of initial covariate coefficients.
+Rows correspond to covariates and columns to transitions
+12, 13 and 23. Set to NULL when no covariates are included.}
 
-\item{beta}{Initial value of the proportionality parameter.
-This argument is used only for estimating the constrained
-illness--death model.}
+\item{beta_int}{Initial value of the proportionality coefficient.
+Required only for the constrained illness--death model.}
 
-\item{distribution}{Name of the model used. Possible values are:
-piecewise constant exponential (\code{"pwexp"}) and
-piecewise linear approximation (\code{"pla"}).
-The default model is \code{"pwexp"}.}
+\item{distribution}{Baseline intensity model:
+"pwexp" (default) or "pla".}
 
-\item{nom_loglik}{Specifies the illness--death model to be estimated:
-\code{"logcomplet"} for the unconstrained model and
-\code{"logincomplet"} for the constrained model.
-The default is the unconstrained model.}
+\item{nom_loglik}{Illness--death model:
+"logcomplet" for the unconstrained model (default),
+or "logincomplet" for the constrained model.}
 
 \item{dataset}{Dataset used for estimation.}
 
-\item{NomCovariable}{Vector containing the names of the covariates
-included in the dataset.}
+\item{NomCovariable}{Character vector containing the names
+of the covariates included in the dataset.}
 
-\item{breakpoints}{Vector of cut points for the piecewise linear approximation
-or matrix of cut intervals for the piecewise constant exponential model.}
+\item{breakpoints}{Matrix of interval boundaries for PWEXP,
+or vector of cut points for PLA.}
+
+\item{cov_effect}{Covariate-effect structure for the constrained
+model: "common" (default) imposes equal covariate effects
+on transitions 13 and 23; "specific" allows different effects.
+This argument is ignored for the unconstrained model.}
 }
 \value{
-The function returns the maximum likelihood estimators of the
-transition intensity functions, as well as their variances and
-95\% confidence intervals.
+A list of data frames containing maximum likelihood
+estimates, standard errors, Z statistics and 95\% confidence
+intervals for each transition. For constrained models,
+the proportionality coefficient is also returned.
 }
 \description{
-Estimates the parameters of constrained and unconstrained illness--death models
-using the maximum likelihood method, considering the piecewise constant exponential
-model and the piecewise linear approximation.
+Estimates the parameters of constrained and unconstrained
+illness--death models by maximum likelihood, using piecewise
+constant exponential (PWEXP) or piecewise linear (PLA) intensities.
 }
 \examples{
+\dontrun{
 library(PWEXP)
 
 dataset <- simILD(
-  n = 1000,
+  taille = 1000,
   censure = 0.2,
   lambda = t(cbind(c(0.18, 0.2),
                     c(0.15, 0.2),
                     c(0.15, 0.2))),
   breakpoints = 3,
-  beta = matrix(c(0.4, 0.2, 0.2), 1, 3, byrow = TRUE),
+  beta = matrix(c(0.4, 0.2, 0.2), 1, 3),
   covariable = 1,
   distribution = "pwexp",
   lat_long = TRUE
 )
 
+lambda_int <- matrix(0.1, nrow = 2, ncol = 3)
+betax_int <- matrix(0, nrow = 1, ncol = 3)
+
 phildFlex(
-  Lambda = cbind(rep(0.001, 2),
-                  rep(0.001, 2),
-                  rep(0.001, 2)),
-  betax = matrix(rep(-0.001, 3), 1, 3, byrow = TRUE),
+  lambda_int = lambda_int,
+  betax_int = betax_int,
   distribution = "pwexp",
   nom_loglik = "logcomplet",
   dataset = dataset,
@@ -81,16 +91,17 @@ phildFlex(
 )
 
 phildFlex(
-  Lambda = cbind(rep(0.001, 2),
-                  rep(0.001, 2),
-                  rep(0.001, 2)),
-  betax = matrix(rep(-0.001, 3), 1, 3, byrow = TRUE),
-  distribution = "pla",
-  nom_loglik = "logcomplet",
+  lambda_int = lambda_int,
+  betax_int = betax_int,
+  beta_int = 0,
+  distribution = "pwexp",
+  nom_loglik = "logincomplet",
+  cov_effect = "specific",
   dataset = dataset,
   NomCovariable = "X",
-  breakpoints = c(0, 3, Inf)
+  breakpoints = cbind(c(0, 3), c(3, Inf))
 )
+}
 
 }
 \seealso{

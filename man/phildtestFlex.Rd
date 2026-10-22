@@ -2,49 +2,46 @@
 % Please edit documentation in R/phildtestFlex.R
 \name{phildtestFlex}
 \alias{phildtestFlex}
-\title{phildtestFlex}
+\title{Likelihood Ratio Test for Flexible Illness-Death Models}
 \usage{
 phildtestFlex(
-  Lambda,
-  beta = NULL,
-  betax = NULL,
+  lambda_int = NULL,
+  betax_int = NULL,
+  beta_int = NULL,
   distribution = "pwexp",
   dataset = NULL,
-  breakpoints,
-  NomCovariable = NULL
+  breakpoints = NULL,
+  NomCovariable = NULL,
+  cov_effect = "common"
 )
 }
 \arguments{
-\item{Lambda}{Matrix of initial parameter values of dimension (2 * 3).}
+\item{lambda_int}{Matrix of initial baseline parameters with
+three columns corresponding to transitions 12, 13 and 23.}
 
-\item{beta}{Initial value of the proportionality parameter.
-This argument is used only for estimating the constrained
-illness--death model.}
+\item{betax_int}{Matrix of initial covariate coefficients,
+with one row per covariate and three transition columns.}
 
-\item{betax}{Matrix of initial values for covariate coefficients.}
+\item{beta_int}{Initial proportionality coefficient for H0.}
 
-\item{distribution}{Name of the model used. Possible values are:
-piecewise constant exponential (\code{"pwexp"}) and
-piecewise linear approximation (\code{"pla"}).
-The default model is \code{"pwexp"}.}
+\item{distribution}{Either "pwexp" or "pla".}
 
 \item{dataset}{Dataset used for estimation.}
 
-\item{breakpoints}{Vector of cut points for the piecewise linear approximation
-or matrix of intervals for the piecewise constant exponential model.}
+\item{breakpoints}{Matrix of intervals for PWEXP or numeric
+vector of cut points for PLA.}
 
-\item{NomCovariable}{Vector containing the names of the covariates
-included in the dataset.}
+\item{NomCovariable}{Names of covariates in the dataset.}
+
+\item{cov_effect}{Either "common" or "specific".}
 }
 \value{
-The function returns the likelihood ratio test statistic
-along with the associated p-value.
+An object of class "htest".
 }
 \description{
-Performs a likelihood ratio test between the constrained and unconstrained
-illness--death models, considering the piecewise constant exponential model
-and the piecewise linear approximation.
+Performs a likelihood ratio test comparing constrained and
+unconstrained illness-death models using PWEXP or PLA baselines.
 }
 \seealso{
-phildtest
+phildFlex
 }
