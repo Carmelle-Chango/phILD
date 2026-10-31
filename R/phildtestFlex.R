@@ -1,25 +1,22 @@
-
-#' Likelihood Ratio Test for Flexible Illness-Death Models
+#'phildtestFlex
 #'
-#' Performs a likelihood ratio test comparing constrained and
-#' unconstrained illness-death models using PWEXP or PLA baselines.
+#'  Likelihood Ratio Test for Flexible Illness-Death Models
 #'
-#' @param lambda_int Matrix of initial baseline parameters with
-#'   three columns corresponding to transitions 12, 13 and 23.
-#' @param betax_int Matrix of initial covariate coefficients,
-#'   with one row per covariate and three transition columns.
+#' Compares constrained and unconstrained illness-death models
+#' with PWEXP or PLA baseline hazards.
+#'
+#' @param lambda_int Initial baseline matrix (intervals x 3 transitions).
+#' @param betax_int Initial covariate coefficient matrix (covariates x 3).
 #' @param beta_int Initial proportionality coefficient for H0.
 #' @param distribution Either "pwexp" or "pla".
-#' @param dataset Dataset used for estimation.
-#' @param breakpoints Matrix of intervals for PWEXP or numeric
-#'   vector of cut points for PLA.
-#' @param NomCovariable Names of covariates in the dataset.
-#' @param cov_effect Either "common" or "specific".
-#'
+#' @param dataset Long-format dataset.
+#' @param breakpoints PWEXP interval matrix or PLA cutpoint vector.
+#' @param NomCovariable Character vector of covariate names, or NULL.
+#' @param cov_effect "common" or "specific" under H0.
+#' @param weights NULL, numeric observation weights, or a weight-column name.
 #' @return An object of class "htest".
 #' @seealso phildFlex
 #' @export
-
 phildtestFlex <- function(lambda_int = NULL,
                           betax_int = NULL,
                           beta_int = NULL,
@@ -27,50 +24,26 @@ phildtestFlex <- function(lambda_int = NULL,
                           dataset = NULL,
                           breakpoints = NULL,
                           NomCovariable = NULL,
-                          cov_effect = "common") {
+                          cov_effect = "common",
+                          weights = NULL) {
 
-  loi <- tolower(distribution)
+  loi <- match.arg(tolower(distribution), c("pwexp", "pla"))
+  cov_effect <- match.arg(cov_effect, c("common", "specific"))
 
-  loi <- match.arg(loi, c("pwexp", "pla"))
-  cov_effect <- match.arg(
-    cov_effect, c("common", "specific")
-  )
+  if (is.null(dataset)) stop("dataset must be provided.")
+  data_name <- deparse(substitute(dataset))
+  dataset <- as.data.frame(dataset)
+  weights <- get_weights(dataset, weights)
 
-  # Number of covariates
-  p <- if (is.null(NomCovariable)) {
-    0L
-  } else {
-    length(NomCovariable)
-  }
-
+  p <- if (is.null(NomCovariable)) 0L else length(NomCovariable)
   if (p > 0L && is.null(betax_int)) {
     stop("betax_int must be provided when covariates are specified.")
   }
-
   if (p == 0L && !is.null(betax_int)) {
     stop("NomCovariable must be provided when betax_int is specified.")
   }
 
-  # Select the likelihood functions
-  if (loi == "pwexp") {
-
-    fn_H0 <- totalLoglik
-    fn_H1 <- totalLoglik
-
-  } else {
-
-    fn_H0 <- if (cov_effect == "specific") {
-      logincomplet_spec_pla
-    } else {
-      logincomplet_pla
-    }
-
-    fn_H1 <- logcomplet_pla
-  }
-
-  cat("\n", rep("=", 70), "\n", sep = "")
-
-  # Step 1: Restricted model (H0)
+  cat("\n", paste(rep("=", 70), collapse = ""), "\n", sep = "")
   cat(">> Step 1: Optimization of the restricted model (H0)...\n")
 
   incomplet <- phildII1(
@@ -82,12 +55,12 @@ phildtestFlex <- function(lambda_int = NULL,
     dataset = dataset,
     NomCovariable = NomCovariable,
     breakpoints = breakpoints,
-    cov_effect = cov_effect
+    cov_effect = cov_effect,
+    weights = weights
   )
 
-  parInComplet <- incomplet$Estimate
+  parInComplet <- incomplet[, "Estimate"]
 
-  # Step 2: Full model (H1)
   cat(">> Step 2: Optimization of the full model (H1)...\n")
 
   complet <- phildII1(
@@ -98,102 +71,110 @@ phildtestFlex <- function(lambda_int = NULL,
     dataset = dataset,
     NomCovariable = NomCovariable,
     breakpoints = breakpoints,
-    cov_effect = cov_effect
+    cov_effect = cov_effect,
+    weights = weights
   )
 
-  parComplet <- complet$Estimate
+  parComplet <- complet[, "Estimate"]
 
-  # Step 3: Evaluate the negative log-likelihoods
+  if (any(!is.finite(parInComplet)) || any(!is.finite(parComplet))) {
+    stop("Non-finite parameter estimates: check optimization.")
+  }
+
+  cat(">> Step 3: Likelihood Ratio Test calculation...\n")
+
   if (loi == "pwexp") {
-
-    nbeta_H0 <- 1L + if (cov_effect == "common") {
-      2L * p
-    } else {
-      3L * p
-    }
-
+    nbeta_H0 <- 1L + if (cov_effect == "common") 2L * p else 3L * p
     nbeta_H1 <- 3L * p
 
-    H0G <- fn_H0(
+    H0G <- totalLoglik(
       par = parInComplet,
       breakpoints = breakpoints,
       data = dataset,
       nom_loglik = "logincomplet",
       NomCovariable = NomCovariable,
       nbeta = nbeta_H0,
-      cov_effect = cov_effect
+      cov_effect = cov_effect,
+      weights = weights
     )
 
-    H1G <- fn_H1(
+    H1G <- totalLoglik(
       par = parComplet,
       breakpoints = breakpoints,
       data = dataset,
       nom_loglik = "logcomplet",
       NomCovariable = NomCovariable,
       nbeta = nbeta_H1,
-      cov_effect = cov_effect
+      cov_effect = cov_effect,
+      weights = weights
     )
-
   } else {
+    fn_H0 <- if (cov_effect == "specific") {
+      logincomplet_spec_pla
+    } else {
+      logincomplet_pla
+    }
 
     H0G <- fn_H0(
       par = parInComplet,
       breakpoints = breakpoints,
       data = dataset,
-      NomCovariable = NomCovariable
+      NomCovariable = NomCovariable,
+      weights = weights
     )
 
-    H1G <- fn_H1(
+    H1G <- logcomplet_pla(
       par = parComplet,
       breakpoints = breakpoints,
       data = dataset,
-      NomCovariable = NomCovariable
+      NomCovariable = NomCovariable,
+      weights = weights
     )
   }
 
-  # Step 4: Likelihood ratio test
-  cat(">> Step 3: Likelihood Ratio Test calculation...\n")
-
-  ddl <- length(parComplet) - length(parInComplet)
-
-  if (ddl <= 0L) {
-    stop("The full model must have more parameters than H0.")
+  if (length(H0G) != 1L || length(H1G) != 1L ||
+      !all(is.finite(c(H0G, H1G)))) {
+    stop("The optimized negative log-likelihoods must be finite scalars.")
   }
 
-  if (!all(is.finite(c(H0G, H1G)))) {
-    stop("The estimated log-likelihoods must be finite.")
+  ddl <- length(parComplet) - length(parInComplet)
+  ddl_attendu <- if (cov_effect == "common") 1L + p else 1L
+  if (ddl <= 0L || ddl != ddl_attendu) {
+    stop(sprintf("Unexpected degrees of freedom: got %d; expected %d.",
+                 ddl, ddl_attendu))
   }
 
   DG <- 2 * (H0G - H1G)
-
   if (DG < -1e-6) {
-    warning(
-      "The restricted model has a better log-likelihood ",
-      "than the full model. Check optimization."
-    )
+    warning("H0 has a higher optimized log-likelihood than H1. ",
+            "Check optimization and parameter ordering.")
+  }
+  # Do not silently transform a negative LRT into zero.
+  pvalG <- if (DG >= 0) {
+    pchisq(DG, df = ddl, lower.tail = FALSE)
+  } else {
+    NA_real_
   }
 
-  pvalG <- pchisq(
-    max(DG, 0),
-    df = ddl,
-    lower.tail = FALSE
-  )
-
-  cat("\n>>> Test completed successfully.\n")
-  cat("\n", rep("=", 70), "\n", sep = "")
+  cat("Negative log-likelihood (H0): ", H0G, "\n", sep = "")
+  cat("Negative log-likelihood (H1): ", H1G, "\n", sep = "")
+  cat("Number of parameters (H0): ", length(parInComplet), "\n", sep = "")
+  cat("Number of parameters (H1): ", length(parComplet), "\n", sep = "")
+  cat("LRT statistic: ", DG, "\n", sep = "")
+  cat("Degrees of freedom: ", ddl, "\n", sep = "")
+  cat("P-value: ", pvalG, "\n", sep = "")
+  cat("\n>>> Test completed.\n")
+  cat(paste(rep("=", 70), collapse = ""), "\n", sep = "")
 
   structure(
     list(
       statistic = c(LRT = DG),
       p.value = as.numeric(pvalG),
       parameter = c(df = ddl),
-      method = paste0(
-        "Likelihood Ratio Test for Proportional Hazards ",
-        "assumption (", toupper(loi), ", ",
-        cov_effect, " covariate effects)"
-      ),
-      data.name = deparse(substitute(dataset)),
-      alternative = "two-sided"
+      method = paste0("Likelihood Ratio Test for Proportional Hazards ",
+                      "assumption (", toupper(loi),
+                      "; cov_effect = ", cov_effect, ")"),
+      data.name = data_name
     ),
     class = "htest"
   )
@@ -201,11 +182,40 @@ phildtestFlex <- function(lambda_int = NULL,
 
 
 #' @noRd
-logincomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
+get_weights <- function(data, weights = NULL) {
+
+  if (is.null(weights)) {
+    return(rep(1, nrow(data)))
+  }
+
+  if (is.character(weights) && length(weights) == 1L) {
+    if (!weights %in% names(data)) {
+      stop("Weight column not found in dataset.")
+    }
+    weights <- data[[weights]]
+  }
+
+  if (!is.numeric(weights) ||
+      length(weights) != nrow(data) ||
+      anyNA(weights) ||
+      any(!is.finite(weights)) ||
+      any(weights < 0)) {
+    stop("weights must be numeric, finite, non-negative, ",
+         "and have one value per row of dataset.")
+  }
+
+  as.numeric(weights)
+}
+
+#' @noRd
+logincomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL ,weights = NULL){
   q12 <- par[1]
   q13 <- par[2]
   beta <- par[3]
+
   data <- data.frame(data)
+  data$weig <- get_weights(data, weights)
+
   if(!is.null(NomCovariable)){
     X <- as.matrix(data[, NomCovariable])
     ncov <- ncol(X)
@@ -215,24 +225,26 @@ logincomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
   }else{
     data$lin12 <- data$lin13  <- 0
   }
-  L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q13) + lin13)
-                                                           - q13*int1_vec(stop, breakpoints)*exp(lin13)  ))
-  L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*indi_vec(stop, breakpoints)*(log(q12) + lin12 )
-                                                           - q12*int1_vec(stop, breakpoints)*exp(lin12) ))
-  L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q13*exp(beta))  + lin13 )
-                                                           - q13*exp(beta)*int2_vec(start, stop, breakpoints)*exp(lin13) ))
+  L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(weig*(status*indi_vec(stop, breakpoints)*( log(q13) + lin13)
+                                                                 - q13*int2_vec(start, stop, breakpoints)*exp(lin13)  )) )
+  L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(weig*(status*indi_vec(stop, breakpoints)*(log(q12) + lin12 )
+                                                                 - q12*int2_vec(start, stop, breakpoints)*exp(lin12) )) )
+  L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(weig*(status*indi_vec(stop, breakpoints)*( log(q13*exp(beta))  + lin13 )
+                                                                 - q13*exp(beta)*int2_vec(start, stop, breakpoints)*exp(lin13) )) )
   L <- L12 + L23 + L13
   return(-L)
 }
 #' @noRd
 
-logincomplet_spec_pwexp <- function(par, data, breakpoints,NomCovariable = NULL) {
+logincomplet_spec_pwexp <- function(par, data, breakpoints,NomCovariable = NULL,weights = NULL) {
 
   q12 <- par[1]
   q13 <- par[2]
   beta <- par[3]
 
   data <- data.frame(data)
+  data$weig <- get_weights(data, weights)
+
   if (!is.null(NomCovariable)) {
     X <- as.matrix(data[, NomCovariable, drop = FALSE])
     ncov <- ncol(X)
@@ -246,15 +258,15 @@ logincomplet_spec_pwexp <- function(par, data, breakpoints,NomCovariable = NULL)
     data$lin12 <- data$lin13 <- data$lin23 <- 0
   }
 
-  L13 <- with(data[(data$from == 1) & (data$to == 3), ], sum( status * indi_vec(stop, breakpoints) *(log(q13) + lin13)
-                                                              - q13 * int1_vec(stop, breakpoints) * exp(lin13) ))
+  L13 <- with(data[(data$from == 1) & (data$to == 3), ], sum(weig*( status * indi_vec(stop, breakpoints) *(log(q13) + lin13)
+                                                                    - q13 * int2_vec(start, stop, breakpoints) * exp(lin13) )) )
 
-  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum(status * indi_vec(stop, breakpoints) * (log(q12) + lin12) -
-                                                                q12 * int1_vec(stop, breakpoints) * exp(lin12)))
+  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum(weig*(status * indi_vec(stop, breakpoints) * (log(q12) + lin12) -
+                                                                      q12 * int2_vec(start, stop, breakpoints) * exp(lin12))) )
 
   L23 <- with( data[(data$from == 2) & (data$to == 3), ],
-               sum( status * indi_vec(stop, breakpoints) * (log(q13 * exp(beta)) + lin23) -
-                      q13 * exp(beta) * int2_vec(start, stop, breakpoints) * exp(lin23) ) )
+               sum(weig*( status * indi_vec(stop, breakpoints) * (log(q13 * exp(beta)) + lin23) -
+                            q13 * exp(beta) * int2_vec(start, stop, breakpoints) * exp(lin23) ) ) )
 
   L <- L12 + L23 + L13
 
@@ -262,10 +274,9 @@ logincomplet_spec_pwexp <- function(par, data, breakpoints,NomCovariable = NULL)
 }
 #' @noRd
 logincomplet_pla <- function(par, breakpoints, data,
-                             NomCovariable = NULL) {
+                             NomCovariable = NULL ,weights = NULL) {
 
   ind <- length(breakpoints) - 1
-  indices_auto <- c(seq_len(ind - 1), ind - 1)
   lenpar <- length(par)
 
   par12 <- par[1:ind]
@@ -273,19 +284,24 @@ logincomplet_pla <- function(par, breakpoints, data,
   beta <- par[2 * ind + 1]
   par23 <- par13 * exp(beta)
 
+  # Pentes sur les intervalles finis
   b12 <- diff(par12) / diff(breakpoints[1:ind])
   b13 <- diff(par13) / diff(breakpoints[1:ind])
   b23 <- diff(par23) / diff(breakpoints[1:ind])
 
+  # Ordonnées à l'origine sur les intervalles finis
   a12 <- par12[-1] - b12 * breakpoints[-c(1, ind + 1)]
   a13 <- par13[-1] - b13 * breakpoints[-c(1, ind + 1)]
   a23 <- par23[-1] - b23 * breakpoints[-c(1, ind + 1)]
 
-  rates12 <- cbind(a12, b12)[indices_auto, , drop = FALSE]
-  rates13 <- cbind(a13, b13)[indices_auto, , drop = FALSE]
-  rates23 <- cbind(a23, b23)[indices_auto, , drop = FALSE]
+  # Dernier intervalle : risque constant égal au dernier psi
+  rates12 <- rbind(cbind(a12, b12), c(par12[ind], 0))
+  rates13 <- rbind(cbind(a13, b13), c(par13[ind], 0))
+  rates23 <- rbind(cbind(a23, b23), c(par23[ind], 0))
+
 
   data <- data.frame(data)
+  data$weig <- get_weights(data, weights)
 
 
   if (!is.null(NomCovariable)) {
@@ -307,14 +323,14 @@ logincomplet_pla <- function(par, breakpoints, data,
     data$lin12 <- data$lin13 <- 0
   }
 
-  L13 <- with(data[(data$from == 1) & (data$to == 3), ],sum(status * ( log(hpla(stop, breakpoints, rates13)) + lin13 ) -
-                                                              Hpla(stop, breakpoints, rates13) * exp(lin13)))
+  L13 <- with(data[(data$from == 1) & (data$to == 3), ],sum(weig*(status * ( log(hpla(stop, breakpoints, rates13)) + lin13 ) -
+                                                                    ( Hpla(stop, breakpoints, rates13) - Hpla(start, breakpoints, rates13) ) * exp(lin13))) )
 
-  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum( status * (log(hpla(stop, breakpoints, rates12)) + lin12 ) -
-                                                                 Hpla(stop, breakpoints, rates12) * exp(lin12)))
+  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum(weig*( status * (log(hpla(stop, breakpoints, rates12)) + lin12 ) -
+                                                                       (Hpla(stop, breakpoints, rates12) - Hpla(start, breakpoints, rates12)) * exp(lin12))) )
 
-  L23 <- with(data[(data$from == 2) & (data$to == 3), ], sum( status * ( log(hpla(stop, breakpoints, rates23)) + lin13 ) -
-                                                                ( Hpla(stop, breakpoints, rates23) -  Hpla(start, breakpoints, rates23) ) * exp(lin13)))
+  L23 <- with(data[(data$from == 2) & (data$to == 3), ], sum(weig*( status * ( log(hpla(stop, breakpoints, rates23)) + lin13 ) -
+                                                                      ( Hpla(stop, breakpoints, rates23) -  Hpla(start, breakpoints, rates23) ) * exp(lin13))) )
 
   L <- L12 + L23 + L13
 
@@ -322,10 +338,9 @@ logincomplet_pla <- function(par, breakpoints, data,
 }
 #' @noRd
 logincomplet_spec_pla <- function(par, breakpoints, data,
-                                  NomCovariable = NULL) {
+                                  NomCovariable = NULL ,weights = NULL) {
 
   ind <- length(breakpoints) - 1
-  indices_auto <- c(seq_len(ind - 1), ind - 1)
   lenpar <- length(par)
 
   par12 <- par[1:ind]
@@ -333,20 +348,23 @@ logincomplet_spec_pla <- function(par, breakpoints, data,
   beta <- par[2 * ind + 1]
   par23 <- par13 * exp(beta)
 
+  # Pentes sur les intervalles finis
   b12 <- diff(par12) / diff(breakpoints[1:ind])
   b13 <- diff(par13) / diff(breakpoints[1:ind])
   b23 <- diff(par23) / diff(breakpoints[1:ind])
 
+  # Ordonnées à l'origine sur les intervalles finis
   a12 <- par12[-1] - b12 * breakpoints[-c(1, ind + 1)]
   a13 <- par13[-1] - b13 * breakpoints[-c(1, ind + 1)]
   a23 <- par23[-1] - b23 * breakpoints[-c(1, ind + 1)]
 
-  rates12 <- cbind(a12, b12)[indices_auto, , drop = FALSE]
-  rates13 <- cbind(a13, b13)[indices_auto, , drop = FALSE]
-  rates23 <- cbind(a23, b23)[indices_auto, , drop = FALSE]
+  # Dernier intervalle : risque constant égal au dernier psi
+  rates12 <- rbind(cbind(a12, b12), c(par12[ind], 0))
+  rates13 <- rbind(cbind(a13, b13), c(par13[ind], 0))
+  rates23 <- rbind(cbind(a23, b23), c(par23[ind], 0))
 
   data <- data.frame(data)
-
+  data$weig <- get_weights(data, weights)
 
   if (!is.null(NomCovariable)) {
 
@@ -356,8 +374,8 @@ logincomplet_spec_pla <- function(par, breakpoints, data,
     c <- par[(2 * ind + 2):lenpar]
 
     if (length(c) != 3 * ncov) {
-      stop( "The common-effects constrained PLA model requires ",
-            "two coefficients per covariate." )
+      stop( "The specific-effects constrained PLA model requires ",
+            "three coefficients per covariate." )
     }
 
     data$lin12 <- as.vector(X %*% c[seq_len(ncov)])
@@ -368,25 +386,26 @@ logincomplet_spec_pla <- function(par, breakpoints, data,
     data$lin12 <- data$lin13 <-  data$lin23 <- 0
   }
 
-  L13 <- with(data[(data$from == 1) & (data$to == 3), ],sum(status * ( log(hpla(stop, breakpoints, rates13)) + lin13 ) -
-                                                              Hpla(stop, breakpoints, rates13) * exp(lin13)))
+  L13 <- with(data[(data$from == 1) & (data$to == 3), ],sum(weig*(status * ( log(hpla(stop, breakpoints, rates13)) + lin13 ) -
+                                                                    ( Hpla(stop, breakpoints, rates13) - Hpla(start, breakpoints, rates13) ) * exp(lin13))) )
 
-  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum( status * (log(hpla(stop, breakpoints, rates12)) + lin12 ) -
-                                                                 Hpla(stop, breakpoints, rates12) * exp(lin12)))
+  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum(weig*( status * (log(hpla(stop, breakpoints, rates12)) + lin12 ) -
+                                                                       (Hpla(stop, breakpoints, rates12) - Hpla(start, breakpoints, rates12)) * exp(lin12))) )
 
-  L23 <- with(data[(data$from == 2) & (data$to == 3), ], sum( status * ( log(hpla(stop, breakpoints, rates23)) + lin23 ) -
-                                                                ( Hpla(stop, breakpoints, rates23) -  Hpla(start, breakpoints, rates23) ) * exp(lin23)))
+  L23 <- with(data[(data$from == 2) & (data$to == 3), ], sum(weig*( status * ( log(hpla(stop, breakpoints, rates23)) + lin23 ) -
+                                                                      ( Hpla(stop, breakpoints, rates23) -  Hpla(start, breakpoints, rates23) ) * exp(lin23))) )
 
   L <- L12 + L23 + L13
 
   return(-L)
 }
 #' @noRd
-logcomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
+logcomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL ,weights = NULL){
   q12 <- par[1]
   q13 <- par[2]
   q23 <- par[3]
   data <- data.frame(data)
+  data$weig <- get_weights(data, weights)
   if(!is.null(NomCovariable)){
     X <- as.matrix(data[, NomCovariable])
     ncov <- ncol(X)
@@ -397,12 +416,12 @@ logcomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
   }else{
     data$lin12 <- data$lin13 <- data$lin23 <- 0
   }
-  L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q13) + lin13)
-                                                           - q13*int1_vec(stop, breakpoints)*exp(lin13)  ))
-  L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(status*indi_vec(stop, breakpoints)*(log(q12) + lin12 )
-                                                           - q12*int1_vec(stop, breakpoints)*exp(lin12) ))
-  L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(status*indi_vec(stop, breakpoints)*( log(q23)  + lin23 )
-                                                           - q23*int2_vec(start, stop, breakpoints)*exp(lin23) ))
+  L13 <-  with(data[(data$from == 1)&(data$to ==3), ], sum(weig*(status*indi_vec(stop, breakpoints)*( log(q13) + lin13)
+                                                                 - q13*int2_vec(start, stop, breakpoints)*exp(lin13)  )) )
+  L12 <-  with(data[(data$from == 1)&(data$to ==2), ], sum(weig*(status*indi_vec(stop, breakpoints)*(log(q12) + lin12 )
+                                                                 - q12*int2_vec(start, stop, breakpoints)*exp(lin12) )) )
+  L23 <-  with(data[(data$from == 2)&(data$to ==3), ], sum(weig*(status*indi_vec(stop, breakpoints)*( log(q23)  + lin23 )
+                                                                 - q23*int2_vec(start, stop, breakpoints)*exp(lin23) )) )
   L <- L12 + L23 + L13
 
   return(-L)
@@ -410,10 +429,9 @@ logcomplet_pwexp <- function(par, data, breakpoints, NomCovariable=NULL){
 #' @noRd
 
 logcomplet_pla <- function(par, breakpoints, data = NULL,
-                           NomCovariable = NULL) {
+                           NomCovariable = NULL ,weights = NULL) {
 
   ind <- length(breakpoints) - 1
-  indices_auto <- c(seq_len(ind - 1), ind - 1)
 
   lenpar <- length(par)
 
@@ -421,20 +439,23 @@ logcomplet_pla <- function(par, breakpoints, data = NULL,
   par13 <- par[(ind + 1):(2 * ind)]
   par23 <- par[(2 * ind + 1):(3 * ind)]
 
+  # Pentes sur les intervalles finis
   b12 <- diff(par12) / diff(breakpoints[1:ind])
   b13 <- diff(par13) / diff(breakpoints[1:ind])
   b23 <- diff(par23) / diff(breakpoints[1:ind])
 
+  # Ordonnées à l'origine sur les intervalles finis
   a12 <- par12[-1] - b12 * breakpoints[-c(1, ind + 1)]
   a13 <- par13[-1] - b13 * breakpoints[-c(1, ind + 1)]
   a23 <- par23[-1] - b23 * breakpoints[-c(1, ind + 1)]
 
-  rates12 <- cbind(a12, b12)[indices_auto, , drop = FALSE]
-  rates13 <- cbind(a13, b13)[indices_auto, , drop = FALSE]
-  rates23 <- cbind(a23, b23)[indices_auto, , drop = FALSE]
+  # Dernier intervalle : risque constant égal au dernier psi
+  rates12 <- rbind(cbind(a12, b12), c(par12[ind], 0))
+  rates13 <- rbind(cbind(a13, b13), c(par13[ind], 0))
+  rates23 <- rbind(cbind(a23, b23), c(par23[ind], 0))
 
   data <- data.frame(data)
-
+  data$weig <- get_weights(data, weights)
 
   if (!is.null(NomCovariable)) {
 
@@ -460,39 +481,15 @@ logcomplet_pla <- function(par, breakpoints, data = NULL,
   }
 
 
-  L13 <- with(
-    data[(data$from == 1) & (data$to == 3), ],sum(
-      status * (
-        log(hpla(stop, breakpoints, rates13)) + lin13
-      ) -
-        Hpla(stop, breakpoints, rates13) * exp(lin13)
-    )
-  )
+  L13 <- with(data[(data$from == 1) & (data$to == 3), ],sum(weig*(status * ( log(hpla(stop, breakpoints, rates13)) + lin13 ) -
+                                                                    ( Hpla(stop, breakpoints, rates13) - Hpla(start, breakpoints, rates13) ) * exp(lin13))) )
 
+  L12 <- with( data[(data$from == 1) & (data$to == 2), ], sum(weig*( status * (log(hpla(stop, breakpoints, rates12)) + lin12 ) -
+                                                                       (Hpla(stop, breakpoints, rates12) - Hpla(start, breakpoints, rates12)) * exp(lin12))) )
 
-  L12 <- with(
-    data[(data$from == 1) & (data$to == 2), ],
-    sum(
-      status * (
-        log(hpla(stop, breakpoints, rates12)) + lin12
-      ) -
-        Hpla(stop, breakpoints, rates12) * exp(lin12)
-    )
-  )
+  L23 <- with(data[(data$from == 2) & (data$to == 3), ], sum(weig*( status * ( log(hpla(stop, breakpoints, rates23)) + lin23 ) -
+                                                                      ( Hpla(stop, breakpoints, rates23) -  Hpla(start, breakpoints, rates23) ) * exp(lin23))) )
 
-
-  L23 <- with(
-    data[(data$from == 2) & (data$to == 3), ],
-    sum(
-      status * (
-        log(hpla(stop, breakpoints, rates23)) + lin23
-      ) -
-        (
-          Hpla(stop, breakpoints, rates23) -
-            Hpla(start, breakpoints, rates23)
-        ) * exp(lin23)
-    )
-  )
 
   L <- L12 + L23 + L13
 
@@ -505,7 +502,7 @@ totalLoglik <- function(par, breakpoints, data = NULL,
                         nom_loglik = "logcomplet",
                         NomCovariable = NULL,
                         nbeta = NULL,
-                        cov_effect = "common") {
+                        cov_effect = "common" ,weights = NULL) {
 
 
   nom_loglik <- match.arg( nom_loglik, c("logcomplet", "logincomplet"))
@@ -579,7 +576,8 @@ totalLoglik <- function(par, breakpoints, data = NULL,
         par = c(lambda_mat[i, ], beta, beta_uniques),
         breakpoints = breakpoints[i, ],
         data = data,
-        NomCovariable = NomCovariable
+        NomCovariable = NomCovariable,
+        weights = weights
       )
     )
 
@@ -589,7 +587,6 @@ totalLoglik <- function(par, breakpoints, data = NULL,
   return(logliksum)
 }
 
-#' @noRd
 
 phildII1 <- function(lambda_int = NULL,
                      betax_int = NULL,
@@ -599,7 +596,8 @@ phildII1 <- function(lambda_int = NULL,
                      dataset = NULL,
                      NomCovariable = NULL,
                      breakpoints = NULL,
-                     cov_effect = "common") {
+                     cov_effect = "common",
+                     weights = NULL) {
 
   loi <- tolower(distribution)
 
@@ -619,6 +617,9 @@ phildII1 <- function(lambda_int = NULL,
   if (is.null(dataset)) {
     stop("dataset must be provided.")
   }
+
+  dataset <- as.data.frame(dataset)
+  weights <- get_weights(dataset, weights)
 
   if (is.null(lambda_int) || !is.matrix(lambda_int)) {
     stop("lambda_int must be a matrix.")
@@ -671,8 +672,8 @@ phildII1 <- function(lambda_int = NULL,
 
     if (length(breakpoints) < 3 ||
         anyNA(breakpoints) ||
-        any(!is.finite(head(breakpoints, -1))) ||
-        !is.infinite(tail(breakpoints, 1)) ||
+        any(!is.finite(utils::head(breakpoints, -1))) ||
+        !is.infinite(utils::tail(breakpoints, 1)) ||
         tail(breakpoints, 1) < 0 ||
         any(diff(breakpoints) <= 0)) {
 
@@ -894,6 +895,7 @@ phildII1 <- function(lambda_int = NULL,
     breakpoints = breakpoints,
     data = dataset,
     NomCovariable = NomCovariable,
+    weights = weights,
     lower = Low,
     upper = Upe,
     control = list(maxit = 1000),
@@ -953,7 +955,6 @@ phildII1 <- function(lambda_int = NULL,
       row.names = parametres_names
     )
   }
-
 
   return(OptimResult)
 }

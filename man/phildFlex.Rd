@@ -13,7 +13,8 @@ phildFlex(
   dataset = NULL,
   NomCovariable = NULL,
   breakpoints = NULL,
-  cov_effect = "common"
+  cov_effect = "common",
+  weights = NULL
 )
 }
 \arguments{
@@ -48,6 +49,13 @@ or vector of cut points for PLA.}
 model: "common" (default) imposes equal covariate effects
 on transitions 13 and 23; "specific" allows different effects.
 This argument is ignored for the unconstrained model.}
+
+\item{weights}{Optional vector of non-negative observation weights,
+with one weight per row of \code{dataset}, or the name of a
+column in \code{dataset} containing these weights.
+If \code{NULL} (default), all weights are set to 1.
+Weights may be used for inverse probability of censoring
+weighting (IPCW).}
 }
 \value{
 A list of data frames containing maximum likelihood

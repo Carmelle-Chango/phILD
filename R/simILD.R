@@ -538,28 +538,10 @@ Hpla <- function (t, breakpoints, rates){
   }
   return(cumhaz)
 }
-#' @noRd
-HHpla <- function (t, s, breakpoints, rates){
-  lent <- length(t)
-  cumhaz <- vector(mode = "numeric", length = lent)
-  for (i in 1:lent) {
-    breakp <- breakpoints
-    int <- findInterval(t[i], breakpoints, all.inside = TRUE)
-    int2 <- findInterval(s[i], breakpoints, all.inside = TRUE)
-    breakp[int2] <- s[i]
-    breakp[int+1] <- t[i]
-    breakp <- breakp[int2:(int+1)]
-    z1 <- t[i] - breakp
-    z2 <- (t[i])^2-(breakp)^2
-    exposure1 <- c(-diff(z1), z1[length(z1)])[-length(z1)]
-    exposure2 <- c(-diff(z2), z2[length(z2)])[-length(z1)]
-    kk <- as.vector(rates[int2:int,])*c(exposure1,0.5*exposure2)
-    cumhaz[i] <- sum(kk)
-  }
-  return(cumhaz)
-}
+
 #' @noRd
 hpla <- function(t, breakpoints, rates) {
+
   N <- nrow(rates)
   pp <- numeric(length(t))
   indices <- findInterval(t, breakpoints,all.inside = TRUE )
@@ -571,58 +553,35 @@ hpla <- function(t, breakpoints, rates) {
       pp[i] <- 0
     }
   }
+
   return(pp)
 }
+
 #' @noRd
-ppla <- function (t, breakpoints, rates){
-  lent <- length(t)
-  cumhaz <- vector(mode = "numeric", length = lent)
-  for (i in 1:lent) {
-    int <- findInterval(t[i], breakpoints, all.inside = TRUE)
-    z1 <- t[i] - breakpoints[1:int]
-    z2 <- (t[i])^2-(breakpoints[1:int])^2
-    exposure1 <- c(-diff(z1), z1[int])
-    exposure2 <- c(-diff(z2), z2[int])
-    kk <- as.vector(rates[1:int,])*c(exposure1,0.5*exposure2)
-    cumhaz[i] <- sum(kk)
-  }
-  return(1- exp(-cumhaz))
+ppla <- function(t, breakpoints, rates){
+  1 - exp(-Hpla(t, breakpoints, rates))
 }
 #' @noRd
-pw_root <- function(t, breakpoints,rates, uu){
-  aa <-  Hpla(t, breakpoints,rates) + log(1-uu)
-  return(aa)
-}
-#' @noRd
-gte <- function(x, rat, bre){
-  if(x==1){
-    return(rat[,x]*diff(bre^x))
-  }else{
-    return(0.5*rat[,x]*diff(bre^x))
-  }
-}
-#' @noRd
-ff <- function(rates, breakpoints){
-  sapply(1:(ncol(rates)), gte, rat=rates, bre=breakpoints)
-}
-#' @noRd
-qpla <- function(breakpoints,rates, u){
-  interval = c(breakpoints[1], breakpoints[length(breakpoints)])
-  V4 <- cumsum(apply(ff(rates, breakpoints),1,sum))
-  PP = NULL
-  for (i in 1:length(u)) {
-    index <- findInterval(-log(1-u[i]),V4)
-    if(length(breakpoints)-1==index){
-      interval <- c(breakpoints[length(breakpoints)-1],100+0.01)
-    }else if(index==0){
-      interval <- c(breakpoints[1],100+0.01)
-    }else{
-      interval <- c(breakpoints[index+1],100+0.01)
+qpla <- function(breakpoints, rates, u){
+
+  PP <- numeric(length(u))
+  for(i in seq_along(u)){
+    target <- -log(1-u[i])
+    upper <- max(breakpoints[is.finite(breakpoints)])
+    while(Hpla(upper, breakpoints, rates) < target){
+      upper <- 2 * upper
     }
-    PP = c(PP,uniroot(f=pw_root,interval=interval,breakpoints,rates,uu=u[i])$root)
+
+    PP[i] <- uniroot(
+      function(t)
+        Hpla(t, breakpoints, rates) - target,
+      interval = c(breakpoints[1], upper)
+    )$root
   }
+
   return(PP)
 }
+
 #' @noRd
 rpla <-function(n,breakpoints,rates){
   u= runif(n)
@@ -630,17 +589,34 @@ rpla <-function(n,breakpoints,rates){
   return(sim)
 }
 #' @noRd
-qtruncpla <- function(p, aa = - Inf ,bb = Inf, ...){
-  if ( aa >= bb )
-    stop( "argument a is greater than or equal to b" )
-  G.a <- ppla( aa, ... )
-  G.b <- ppla( bb, ... )
-  if ( G.a == G.b ) {
-    stop( "Trunction interval is not inside the domain of the density function" )
+qtruncpla <- function(p, aa = -Inf, bb = Inf, ...){
+
+  if(aa >= bb)
+    stop("argument a is greater than or equal to b")
+
+  # F(a)
+  if(is.infinite(aa) && aa < 0){
+    G.a <- 0
+  } else {
+    G.a <- ppla(aa, ...)
   }
-  G = qpla(..., ppla(aa, ...) - p*(ppla(aa, ...) - ppla(bb, ...)))
-  return(G)
+
+  # F(b)
+  if(is.infinite(bb) && bb > 0){
+    G.b <- 1
+  } else {
+    G.b <- ppla(bb, ...)
+  }
+
+  if(G.a == G.b){
+    stop("Truncation interval is not inside the domain of the distribution")
+  }
+
+  prob <- G.a + p * (G.b - G.a)
+
+  return(qpla(..., u = prob))
 }
+
 #' @noRd
 rtruncpla = function(n, aa = - Inf, bb = Inf , ...){
   x <- u <- runif(n, min = 0, max = 1)
@@ -668,7 +644,7 @@ sim_pla <- function(N,lamc, breakpoints, rates,Betax = NULL, cov = 0, lat_long =
     t1 <- min(t12,t13)
     s1<- ifelse(t12 < t13,2,3)
     if((t12 < t13) && (t12 < CC)){
-      t23 <- rtruncpla(1, aa = t1, bb = 1000000, breakpoints = breakpoints
+      t23 <- rtruncpla(1, aa = t1, bb = Inf, breakpoints = breakpoints
                        , rates23*exp(ux*sum(Betax[,3]*x)))
       s23 <- 3
       start <- c(0,0,t1)

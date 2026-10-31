@@ -2,7 +2,7 @@
 % Please edit documentation in R/phildtestFlex.R
 \name{phildtestFlex}
 \alias{phildtestFlex}
-\title{Likelihood Ratio Test for Flexible Illness-Death Models}
+\title{phildtestFlex}
 \usage{
 phildtestFlex(
   lambda_int = NULL,
@@ -12,35 +12,38 @@ phildtestFlex(
   dataset = NULL,
   breakpoints = NULL,
   NomCovariable = NULL,
-  cov_effect = "common"
+  cov_effect = "common",
+  weights = NULL
 )
 }
 \arguments{
-\item{lambda_int}{Matrix of initial baseline parameters with
-three columns corresponding to transitions 12, 13 and 23.}
+\item{lambda_int}{Initial baseline matrix (intervals x 3 transitions).}
 
-\item{betax_int}{Matrix of initial covariate coefficients,
-with one row per covariate and three transition columns.}
+\item{betax_int}{Initial covariate coefficient matrix (covariates x 3).}
 
 \item{beta_int}{Initial proportionality coefficient for H0.}
 
 \item{distribution}{Either "pwexp" or "pla".}
 
-\item{dataset}{Dataset used for estimation.}
+\item{dataset}{Long-format dataset.}
 
-\item{breakpoints}{Matrix of intervals for PWEXP or numeric
-vector of cut points for PLA.}
+\item{breakpoints}{PWEXP interval matrix or PLA cutpoint vector.}
 
-\item{NomCovariable}{Names of covariates in the dataset.}
+\item{NomCovariable}{Character vector of covariate names, or NULL.}
 
-\item{cov_effect}{Either "common" or "specific".}
+\item{cov_effect}{"common" or "specific" under H0.}
+
+\item{weights}{NULL, numeric observation weights, or a weight-column name.}
 }
 \value{
 An object of class "htest".
 }
 \description{
-Performs a likelihood ratio test comparing constrained and
-unconstrained illness-death models using PWEXP or PLA baselines.
+Likelihood Ratio Test for Flexible Illness-Death Models
+}
+\details{
+Compares constrained and unconstrained illness-death models
+with PWEXP or PLA baseline hazards.
 }
 \seealso{
 phildFlex

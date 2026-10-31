@@ -13,7 +13,8 @@ phildtest(
   distribution = "weibull",
   dataset = NULL,
   NomCovariable = NULL,
-  cov_effect = "common"
+  cov_effect = "common",
+  weights = NULL
 )
 }
 \arguments{
@@ -48,6 +49,13 @@ covariate effects in the constrained illness-death model. Use
 transitions 1->3 and 2->3, or \code{"specific"} to estimate separate
 covariate effects for these transitions. This argument has no effect
 on the unconstrained model.}
+
+\item{weights}{Optional vector of non-negative observation weights,
+with one weight per row of \code{dataset}, or the name of a
+column in \code{dataset} containing these weights.
+If \code{NULL} (default), all weights are set to 1.
+Weights may be used for inverse probability of censoring
+weighting (IPCW).}
 }
 \value{
 An object of class \code{"htest"} containing the likelihood
